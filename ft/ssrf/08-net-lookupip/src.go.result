@@ -1,0 +1,37 @@
+// Issue 89
+// Passing tainted data into net.LookupIP can
+// result in request forgery.
+
+package main
+
+import (
+	"fmt"
+	"net"
+	"net/http"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	urlParam := r.URL.Query().Get("url")
+	// Use net.LookupIP to resolve the host name specified in the url parameter
+	// OpenRefactory Warning:
+	// Possible Server-Side Request Forgery (SSRF) attack!
+	// Path:
+	//	File: src.go, Line: 14
+	//		urlParam := r.URL.Query().Get("url")
+	//		Variable 'urlParam' is assigned a tainted value.
+	//	File: src.go, Line: 16
+	//		net.LookupIP(urlParam)
+	//		Tainted information is used in a sink.
+	ips, err := net.LookupIP(urlParam)
+	if err != nil {
+		fmt.Fprintf(w, "Error resolving IP address: %v", err)
+		return
+	}
+	// Print the IP address(es) returned by net.LookupIP
+	fmt.Fprintf(w, "IP addresses: %v", ips)
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

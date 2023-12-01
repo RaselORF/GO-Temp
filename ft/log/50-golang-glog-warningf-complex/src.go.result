@@ -1,0 +1,46 @@
+// Issue 89
+// Passing tainted data into glog.Warningf can
+// result in log injection.
+package testdata
+
+import (
+	"net/http"
+
+	"github.com/golang/glog"
+)
+
+type User struct {
+	username string
+	password string
+}
+
+func newUser(name string, pass string) User {
+	return User{
+		username: name,
+		password: pass,
+	}
+}
+func handler(w http.ResponseWriter, req *http.Request) {
+	username := req.URL.Query().Get("username")
+	password := req.URL.Query().Get("password")
+	user := newUser(username, password)
+	// OpenRefactory Warning:
+	// Possible Log injection!
+	// Path:
+	//	File: src.go, Line: 24
+	//		username := req.URL.Query().Get("username")
+	//		Variable 'username' is assigned a tainted value.
+	//	File: src.go, Line: 26
+	//		user := newUser(username, password)
+	//		Variable 'user' is assigned a tainted value.
+	//	File: src.go, Line: 27
+	//		glog.Warningf("user %s is logged in", user.username)
+	//		Tainted information is used in a sink.
+	glog.Warningf("user %s is logged in", user.username)
+	w.Write([]byte("Hello, world!"))
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

@@ -1,0 +1,34 @@
+// Issue 89
+// Passing tainted data into echo.StaticFS can
+// result in Path manipulation attack.
+
+package main
+
+import (
+	"net/http"
+
+	"github.com/labstack/echo/v4"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	prefix := r.URL.Query().Get("path")
+	e := echo.New()
+
+	// Serve static files from the "public" directory at the "/static" URL path
+	// OpenRefactory Warning:
+	// Possible Path manipulation attack!
+	// Path:
+	//	File: src.go, Line: 14
+	//		prefix := r.URL.Query().Get("path")
+	//		Variable 'prefix' is assigned a tainted value.
+	//	File: src.go, Line: 18
+	//		e.Static(prefix, "/")
+	//		Tainted information is used in a sink.
+	e.Static(prefix, "/")
+	w.Write([]byte("Hello"))
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

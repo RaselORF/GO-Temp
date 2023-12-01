@@ -1,0 +1,21 @@
+// Issue 143
+// Setting tls.Config.MinVersion to tls.VersionSSL30
+// Generate warning
+
+package main
+
+import (
+	"crypto/tls"
+	"fmt"
+)
+
+func main() {
+	config := &tls.Config{}
+	var a string
+	// OpenRefactory Warning:
+	// Usage of insecure protocol version in TLS configuration.
+	a, config.MinVersion = "dkfd", tls.VersionSSL30
+	fmt.Print(a, config)
+}
+
+//<<<<<188, 235>>>>>

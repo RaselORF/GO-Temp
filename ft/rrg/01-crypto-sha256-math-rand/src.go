@@ -1,0 +1,22 @@
+// Issue 89
+// Pseudo random number generator should
+// be avoided for cryptographic purpose
+
+package main
+
+import (
+	"crypto/sha256"
+	"math/rand"
+	"time"
+)
+
+func hashVal(val []byte) []byte {
+	rand.Seed(time.Now().UnixNano())
+	salt := make([]byte, 16)
+	rand.Read(salt)
+	hash := sha256.New()
+	hash.Write(val)
+	hash.Write(salt)
+	hashedBytes := hash.Sum(nil)
+	return hashedBytes
+}

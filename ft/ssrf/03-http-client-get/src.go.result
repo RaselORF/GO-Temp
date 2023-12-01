@@ -1,0 +1,44 @@
+// Issue 89
+// Passing tainted data into http.Client.Get can
+// result in request forgery.
+
+package main
+
+import (
+	"fmt"
+	"net/http"
+)
+
+func handler(w http.ResponseWriter, req *http.Request) {
+	target := req.FormValue("target")
+	url := fmt.Sprintf("https://%s.example.com/data/", target)
+	client := &http.Client{}
+	// OpenRefactory Warning:
+	// Possible Server-Side Request Forgery (SSRF) attack!
+	// Path:
+	//	File: src.go, Line: 13
+	//		target := req.FormValue("target")
+	//		Variable 'target' is assigned a tainted value from an external source.
+	//	File: src.go, Line: 14
+	//		url := fmt.Sprintf("https://%s.example.com/data/", target)
+	//		Variable 'url' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 16
+	//		client.Get(url)
+	//		Tainted information is used in a sink.
+	resp, err := client.Get(url)
+	if err != nil {
+		fmt.Fprintf(w, "Error fetching URL: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		fmt.Fprintf(w, "Error fetching URL: %v", resp.Status)
+		return
+	}
+	fmt.Fprintf(w, "Success")
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

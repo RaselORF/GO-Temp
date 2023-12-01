@@ -1,0 +1,23 @@
+// Issue 198
+// Returned cancel function should be called.
+// Warning should be given.
+
+package testdata
+
+import (
+	"context"
+)
+
+var bg = context.Background()
+
+func _() {
+	// OpenRefactory Warning:
+	// Possible context leak. The returned cancel function
+	// should be called in all paths.
+	_, cancel := context.WithCancel(bg)
+	if false {
+		_ = cancel
+	}
+}
+
+//<<<<<172, 207>>>>>

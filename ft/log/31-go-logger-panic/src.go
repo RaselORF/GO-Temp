@@ -1,0 +1,27 @@
+// Issue 89
+// Passing tainted data into logger.Panic can
+// result in log injection.
+package testdata
+
+import (
+	"net/http"
+
+	"os"
+
+	"github.com/apsdehal/go-logger"
+)
+
+func handler(w http.ResponseWriter, req *http.Request) {
+	username := req.URL.Query().Get("username")
+	logger, err := logger.New("MyLogger", 1, os.Stdout)
+	if err != nil {
+		panic(err)
+	}
+	w.Write([]byte("Hello, world!"))
+	logger.Panic(username)
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

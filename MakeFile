@@ -1,0 +1,21 @@
+all: tidy build test
+
+tidy:
+	go mod tidy -v
+
+build:
+	cd cli && go build -o ../or-go
+
+run:
+ifneq ($(config),) 
+	go run cli/*.go --config=$(config)
+else
+	go run cli/*.go
+endif
+
+test:
+	go test ./...
+
+cov:
+	go test ./... -coverprofile=cov.out
+	go tool cover -html=cov.out

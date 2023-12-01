@@ -1,0 +1,28 @@
+// Issue 263
+// Sensitive information should not be logged in plaint text.
+
+package testdata
+
+import (
+	"log"
+	"net/http"
+)
+
+func updatePwdHandler(w http.ResponseWriter, r *http.Request) {
+	pwd := "MyP@s5w0rd"
+	// OpenRefactory Warning:
+	// Possible Sensitive Data Leak!
+	// Path:
+	//	File: src.go, Line: 12
+	//		pwd := "MyP@s5w0rd"
+	//		Variable 'pwd' is assigned a tainted value.
+	//	File: src.go, Line: 13
+	//		log.Printf("Updating with new password %s.\n", pwd)
+	//		Tainted information is used in a sink.
+	log.Printf("Updating with new password %s.\n", pwd)
+}
+
+func main() {
+	http.HandleFunc("/update", updatePwdHandler)
+	http.ListenAndServe(":80", nil)
+}

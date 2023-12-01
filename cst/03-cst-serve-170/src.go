@@ -1,0 +1,26 @@
+// Issue 170
+// net/http.Serve method doesn't have
+// support for setting timeout
+// Using this method can cause the program to hang indefinitely
+
+package testdata
+
+import (
+	"fmt"
+	"log"
+	"net"
+	"net/http"
+)
+
+func main() {
+	listener, _ := net.Listen("tcp", ":8080")
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hello, HTTPS world!")
+	}
+	err := http.Serve(listener, http.HandlerFunc(handler))
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+//<<<<<377, 424>>>>>

@@ -1,0 +1,54 @@
+// Issue 125
+// Generate pending taint on param, resolve during compose.
+// Warning should be generated.
+
+package main
+
+import (
+	"net/http"
+	"net/url"
+	"os/exec"
+)
+
+func HandleReq(req *http.Request) {
+	cmdName := getCmdName(req)
+	RunCmd(cmdName)
+}
+
+func getUrlValues(req *http.Request) url.Values {
+	return req.URL.Query()
+}
+
+func getCmdName(req *http.Request) string {
+	vals := getUrlValues(req)
+	return vals.Get("cmd")
+}
+
+func RunCmd(name string) {
+	cmd := exec.Command(name)
+	// OpenRefactory Warning:
+	// Possible OS command injection!
+	// Path:
+	//	File: src.go, Line: 19
+	//		return req.URL.Query()
+	//		A tainted value is returned from the function call.
+	//	File: src.go, Line: 23
+	//		vals := getUrlValues(req)
+	//		Variable 'vals' is assigned a tainted value.
+	//	File: src.go, Line: 24
+	//		return vals.Get("cmd")
+	//		A tainted value is returned from the function call.
+	//	File: src.go, Line: 14
+	//		cmdName := getCmdName(req)
+	//		Variable 'cmdName' is assigned a tainted value.
+	//	File: src.go, Line: 15
+	//		RunCmd(cmdName)
+	//		Tainted information is passed through the function call via 'cmdName' to the parameter 'name'
+	//	File: src.go, Line: 28
+	//		cmd := exec.Command(name)
+	//		Variable 'cmd' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 29
+	//		cmd.Run()
+	//		Tainted information is used in a sink.
+	cmd.Run()
+}

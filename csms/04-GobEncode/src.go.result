@@ -1,0 +1,16 @@
+// Issue 296
+// Implementation of GobEncode has wrong signature.
+// Warning will be given.
+
+package testdata
+
+type S struct{}
+
+// OpenRefactory Warning:
+// Signature of 'GobEncode' should be
+// 'GobEncode() ([]byte, error)'.
+func (s S) GobEncode() []byte {
+	return nil
+}
+
+//<<<<<127, 172>>>>>

@@ -1,0 +1,40 @@
+// Issue 195
+// Using XSS sanitizer will not prevent OS command injection.
+// Warning should be generated.
+
+package main
+
+import (
+	"net/http"
+	"os/exec"
+
+	"github.com/microcosm-cc/bluemonday"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	param := r.URL.Query().Get("param")
+	p := bluemonday.UGCPolicy()
+	sanitized := p.Sanitize(param)
+	cmd := exec.Command(sanitized)
+	// OpenRefactory Warning:
+	// Possible OS command injection!
+	// Path:
+	//	File: src.go, Line: 15
+	//		param := r.URL.Query().Get("param")
+	//		Variable 'param' is assigned a tainted value.
+	//	File: src.go, Line: 17
+	//		sanitized := p.Sanitize(param)
+	//		Variable 'sanitized' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 18
+	//		cmd := exec.Command(sanitized)
+	//		Variable 'cmd' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 19
+	//		cmd.Run()
+	//		Tainted information is used in a sink.
+	cmd.Run()
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":5000", nil)
+}

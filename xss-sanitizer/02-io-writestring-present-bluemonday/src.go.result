@@ -1,0 +1,31 @@
+// Issue 89
+// Writting tainted data into http.ResponseWriter can
+// result in Cross-Site Scripting.
+
+package main
+
+import (
+	"fmt"
+	"io"
+	"net/http"
+
+	"github.com/microcosm-cc/bluemonday"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	p := bluemonday.UGCPolicy()
+	fmt.Print(p)
+	// OpenRefactory Warning:
+	// Possible Cross-Site Scripting (XSS)!
+	// Path:
+	//	File: src.go, Line: 18
+	//		io.WriteString(w, r.URL.Query().Get("param"))
+	//		Tainted information is used in a sink.
+	// Fix: iCR sanitizes the tainted input.
+	io.WriteString(w, bluemonday.UGCPolicy().Sanitize(r.URL.Query().Get("param")))
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":5000", nil)
+}

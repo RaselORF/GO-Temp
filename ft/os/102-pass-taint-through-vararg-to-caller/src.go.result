@@ -1,0 +1,49 @@
+// Issue 142
+// Test for pending taint propagation through
+// variadic param of multiple method.
+
+package main
+
+import (
+	"net/http"
+	"os/exec"
+)
+
+func HandleReq(req *http.Request) {
+	commands := make([]string, 3)
+	foo(req, commands...)
+	bar(commands...)
+}
+
+func foo(req *http.Request, commands ...string) {
+	vals := req.URL.Query()
+	commands[0] = vals.Get("cmd")
+}
+
+func bar(cmdList ...string) {
+	for _, cmdStr := range cmdList {
+		cmd := exec.Command(cmdStr)
+		// OpenRefactory Warning:
+		// Possible OS command injection!
+		// Path:
+		//	File: src.go, Line: 19
+		//		vals := req.URL.Query()
+		//		Variable 'vals' is assigned a tainted value from an external source.
+		//	File: src.go, Line: 20
+		//		commands[0] = vals.Get("cmd")
+		//		Variable 'commands[0]' is assigned a tainted value which is passed through a function call.
+		//	File: src.go, Line: 15
+		//		bar(commands...)
+		//		Tainted information is passed through the function call via 'commands' to the parameter 'cmdList'
+		//	File: src.go, Line: 24
+		//		for _, cmdStr := range cmdList {
+		//		Variable 'cmdStr' is assigned a tainted value.
+		//	File: src.go, Line: 25
+		//		cmd := exec.Command(cmdStr)
+		//		Variable 'cmd' is assigned a tainted value which is passed through a function call.
+		//	File: src.go, Line: 26
+		//		cmd.Run()
+		//		Tainted information is used in a sink.
+		cmd.Run()
+	}
+}

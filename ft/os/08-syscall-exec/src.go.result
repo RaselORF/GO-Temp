@@ -1,0 +1,31 @@
+// Issue 89
+// Passing tainted data into syscall.Exec.
+// Warning should be generated.
+
+package testdata
+
+import (
+	"net/http"
+	"os"
+	"syscall"
+)
+
+func handler(w http.ResponseWriter, req *http.Request) {
+	cmdName := req.URL.Query().Get("cmd")
+	args := []string{"-a", "-l", "-h"}
+	// OpenRefactory Warning:
+	// Possible OS command injection!
+	// Path:
+	//	File: src.go, Line: 14
+	//		cmdName := req.URL.Query().Get("cmd")
+	//		Variable 'cmdName' is assigned a tainted value.
+	//	File: src.go, Line: 16
+	//		syscall.Exec(cmdName, args, os.Environ())
+	//		Tainted information is used in a sink.
+	syscall.Exec(cmdName, args, os.Environ())
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

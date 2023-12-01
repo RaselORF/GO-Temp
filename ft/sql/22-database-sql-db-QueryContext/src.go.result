@@ -1,0 +1,49 @@
+// Issue 89
+// Passing tainted data into db.QueryContext can
+// result in sql injection.
+
+package main
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"net/http"
+	"os"
+)
+
+func signupHandler(w http.ResponseWriter, r *http.Request) {
+	connStr := os.Getenv("DbConnStr")
+	db, _ := sql.Open("postgres", connStr)
+	defer db.Close()
+
+	username := r.FormValue("username")
+	query := fmt.Sprintf("SELECT * FROM users WHERE username = %s", username)
+	ctx := context.Background()
+	// OpenRefactory Warning:
+	// Possible SQL injection!
+	// Path:
+	//	File: src.go, Line: 20
+	//		username := r.FormValue("username")
+	//		Variable 'username' is assigned a tainted value from an external source.
+	//	File: src.go, Line: 21
+	//		query := fmt.Sprintf("SELECT * FROM users WHERE username = %s", username)
+	//		Variable 'query' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 23
+	//		db.QueryContext(ctx, query, username)
+	//		Tainted information is used in a sink.
+	rows, _ := db.QueryContext(ctx, query, username)
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		var username string
+		var password string
+		rows.Scan(&id, &username, &password)
+		fmt.Print(id, username, password)
+	}
+}
+
+func main() {
+	http.HandleFunc("/", signupHandler)
+	http.ListenAndServe(":8090", nil)
+}

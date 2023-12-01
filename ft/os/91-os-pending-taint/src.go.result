@@ -1,0 +1,40 @@
+// Issue 142
+// Generate pending taint on param,
+// resolve during compose of variadic function.
+// Warning should be generated.
+
+package main
+
+import (
+	"net/http"
+	"os/exec"
+)
+
+func HandleReq(req *http.Request) {
+	vals := req.URL.Query()
+	cmdName := vals.Get("cmd")
+	RunCmd(cmdName, 3, 5, 9)
+}
+
+func RunCmd(name string, data ...int) {
+	cmd := exec.Command(name)
+	// OpenRefactory Warning:
+	// Possible OS command injection!
+	// Path:
+	//	File: src.go, Line: 14
+	//		vals := req.URL.Query()
+	//		Variable 'vals' is assigned a tainted value from an external source.
+	//	File: src.go, Line: 15
+	//		cmdName := vals.Get("cmd")
+	//		Variable 'cmdName' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 16
+	//		RunCmd(cmdName, 3, 5, 9)
+	//		Tainted information is passed through the function call via 'cmdName' to the parameter 'name'
+	//	File: src.go, Line: 20
+	//		cmd := exec.Command(name)
+	//		Variable 'cmd' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 21
+	//		cmd.Run()
+	//		Tainted information is used in a sink.
+	cmd.Run()
+}

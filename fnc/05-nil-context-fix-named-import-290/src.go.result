@@ -1,0 +1,21 @@
+// Issue 290
+// context package is imported with named import.
+// Generate fix correctly.
+
+package testdata
+
+import (
+	ctx4 "context"
+	"time"
+)
+
+func foo(c ctx4.Context) {
+	_, cancel := ctx4.WithTimeout(c, 5*time.Second)
+	defer cancel()
+}
+
+func main() {
+	foo(ctx4.Background())
+}
+
+//<<<<<255, 263>>>>>

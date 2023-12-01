@@ -1,0 +1,39 @@
+// Issue 89
+// Passing tainted data into ioutil.TempDir can
+// result in Path manipulation attack.
+
+package testdata
+
+import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Query().Get("path")
+	// OpenRefactory Warning:
+	// Possible Path manipulation attack!
+	// Path:
+	//	File: src.go, Line: 15
+	//		path := r.URL.Query().Get("path")
+	//		Variable 'path' is assigned a tainted value.
+	//	File: src.go, Line: 16
+	//		ioutil.TempDir(path, "example")
+	//		Tainted information is used in a sink.
+	dir, err := ioutil.TempDir(path, "example")
+	if err != nil {
+		fmt.Println("Error creating temporary directory:", err)
+		return
+	}
+	defer os.RemoveAll(dir)
+
+	fmt.Println("Temporary directory created:", dir)
+	w.Write([]byte("Hello"))
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

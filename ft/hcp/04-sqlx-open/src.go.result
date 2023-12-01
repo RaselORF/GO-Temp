@@ -1,0 +1,34 @@
+// Issue 89
+// Should avoid Passing hard coded password while
+// creating db instance
+
+package main
+
+import (
+	"fmt"
+
+	"github.com/jmoiron/sqlx"
+)
+
+const (
+	user     = "dbuser"
+	password = "s3cretp4ssword"
+)
+
+func main() {
+	connStr := fmt.Sprintf("postgres://%s:%s@localhost/pqgotest", user, password)
+	// OpenRefactory Warning:
+	// Possible Hard Coded Password!
+	// Path:
+	//	File: src.go, Line: 19
+	//		connStr := fmt.Sprintf("postgres://%s:%s@localhost/pqgotest", user, password)
+	//		Variable 'connStr' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 20
+	//		sqlx.Open("postgres", connStr)
+	//		Tainted information is used in a sink.
+	db, _ := sqlx.Open("postgres", connStr)
+	defer db.Close()
+	query := fmt.Sprintf("SELECT * FROM users WHERE username='%s' AND password='%s'", "username", "password")
+
+	db.Exec(query)
+}

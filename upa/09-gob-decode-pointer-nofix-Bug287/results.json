@@ -1,0 +1,73 @@
+
+    {
+        "fixer-message-id": "GoFT-15",
+        "cat_shrt_name": "GoFT",
+        "original_filename": "/workspace/source/cmd/server/cadence/server.go",
+        "function_name": "startService",
+        "selected_node": "log.Fatalf(\"error creating rpc factory params: %v\", err)",
+        "project_path": "/workspace/source/",
+        "diff_locations": [
+            "server.go881421598.diff"
+        ],
+        "scan_date": "Mon Aug 14 12:57:06 UTC 2023"
+    },
+    {
+        "fixer-message-id": "GoFT-15",
+        "cat_shrt_name": "GoFT",
+        "original_filename": "/workspace/source/cmd/server/cadence/server.go",
+        "function_name": "startService",
+        "selected_node": "log.Fatalf(\"ringpop provider failed: %v\", err)",
+        "project_path": "/workspace/source/",
+        "diff_locations": [
+            "server.go1315994123.diff"
+        ],
+        "scan_date": "Mon Aug 14 12:57:06 UTC 2023"
+    },
+    {
+        "fixer-message-id": "GoFT-15",
+        "cat_shrt_name": "GoFT",
+        "original_filename": "/workspace/source/cmd/server/cadence/server.go",
+        "function_name": "startService",
+        "selected_node": "log.Fatalf(\"error creating membership monitor: %v\", err)",
+        "project_path": "/workspace/source/",
+        "diff_locations": [
+            "server.go963452439.diff"
+        ],
+        "scan_date": "Mon Aug 14 12:57:06 UTC 2023"
+    },
+    {
+        "fixer-message-id": "GoFT-15",
+        "cat_shrt_name": "GoFT",
+        "original_filename": "/workspace/source/cmd/server/cadence/server.go",
+        "function_name": "startService",
+        "selected_node": "log.Fatalf(\"not able to find advanced visibility store in config: %v\", advancedVisStoreKey)",
+        "project_path": "/workspace/source/",
+        "diff_locations": [
+            "server.go4291331830.diff"
+        ],
+        "scan_date": "Mon Aug 14 12:57:06 UTC 2023"
+    },
+    {
+        "fixer-message-id": "GoFT-15",
+        "cat_shrt_name": "GoFT",
+        "original_filename": "/workspace/source/cmd/server/cadence/server.go",
+        "function_name": "startService",
+        "selected_node": "log.Fatalf(\"error creating elastic search client: %v\", err)",
+        "project_path": "/workspace/source/",
+        "diff_locations": [
+            "server.go3537677276.diff"
+        ],
+        "scan_date": "Mon Aug 14 12:57:06 UTC 2023"
+    },
+    {
+        "fixer-message-id": "GoFT-15",
+        "cat_shrt_name": "GoFT",
+        "original_filename": "/workspace/source/cmd/server/cadence/server.go",
+        "function_name": "startService",
+        "selected_node": "log.Printf(\"failed to create file blobstore client, will continue startup without it: %v\", err)",
+        "project_path": "/workspace/source/",
+        "diff_locations": [
+            "server.go3398301987.diff"
+        ],
+        "scan_date": "Mon Aug 14 12:57:06 UTC 2023"
+    },

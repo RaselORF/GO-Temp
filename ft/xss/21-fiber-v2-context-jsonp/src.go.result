@@ -1,0 +1,31 @@
+// Issue 89
+// Writting tainted data into Ctx.JSONP can
+// result in Cross-Site Scripting.
+
+package main
+
+import "github.com/gofiber/fiber/v2"
+
+func MyHandler(c *fiber.Ctx) error {
+	Data := c.Query("data")
+	callback := c.Query("callback")
+	// OpenRefactory Warning:
+	// Possible XSS attack!
+	// Path:
+	//	File: src.go, Line: 10
+	//		Data := c.Query("data")
+	//		Variable 'Data' is assigned a tainted value from an external source.
+	//	File: src.go, Line: 12
+	//		c.JSONP(Data, callback)
+	//		Tainted information is used in a sink.
+	c.JSONP(Data, callback)
+	return nil
+}
+
+func main() {
+	app := fiber.New()
+
+	app.Get("/", MyHandler)
+
+	app.Listen(":3000")
+}

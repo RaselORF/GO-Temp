@@ -1,0 +1,24 @@
+// Issue 89
+// Passing tainted data into exec.Command.
+// Warning should be generated.
+
+package main
+
+import (
+	"net/http"
+	"os/exec"
+)
+
+func HandleReq(req *http.Request) {
+	cmdName := req.URL.Query().Get("cmd")
+	// OpenRefactory Warning:
+	// Possible OS command injection!
+	// Path:
+	//	File: src.go, Line: 13
+	//		cmdName := req.URL.Query().Get("cmd")
+	//		Variable 'cmdName' is assigned a tainted value.
+	//	File: src.go, Line: 14
+	//		exec.Command(cmdName).Run()
+	//		Tainted information is passed through a function call and is used in a sink.
+	exec.Command(cmdName).Run()
+}

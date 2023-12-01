@@ -1,0 +1,55 @@
+// Issue 176
+// Passing tainted data into http.Transport.RoundTrip can
+// result in request forgery.
+
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"net/url"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	target := r.FormValue("targetURL")
+	targetUrl := fmt.Sprintf("https://%s.example.com/data/", target)
+	proxyURL, err := url.Parse("http://localhost:8888")
+	if err != nil {
+		panic(err)
+	}
+
+	transport := &http.Transport{
+		Proxy: http.ProxyURL(proxyURL),
+	}
+
+	req, err := http.NewRequest("GET", targetUrl, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	// OpenRefactory Warning:
+	// Possible Server-Side Request Forgery (SSRF) attack!
+	// Path:
+	//	File: src.go, Line: 14
+	//		target := r.FormValue("targetURL")
+	//		Variable 'target' is assigned a tainted value from an external source.
+	//	File: src.go, Line: 15
+	//		targetUrl := fmt.Sprintf("https://%s.example.com/data/", target)
+	//		Variable 'targetUrl' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 25
+	//		req, err := http.NewRequest("GET", targetUrl, nil)
+	//		Variable 'req' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 30
+	//		transport.RoundTrip(req)
+	//		Tainted information is used in a sink.
+	resp, err := transport.RoundTrip(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

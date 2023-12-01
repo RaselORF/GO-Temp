@@ -1,0 +1,18 @@
+// Self assignment in for statement. Warning
+// should be over for statement.
+
+package testdata
+
+import "fmt"
+
+func main() {
+	a := 100
+	// OpenRefactory Warning:
+	// Unnecessary self assignment to a
+	for i, a = 0, a; i < 10; i++ {
+		a += 100
+		fmt.Println(a)
+	}
+}
+
+//<<<<<140, 151>>>>>

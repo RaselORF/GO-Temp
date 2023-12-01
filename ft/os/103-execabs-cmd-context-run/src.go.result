@@ -1,0 +1,37 @@
+// Issue 177
+// Passing tainted data into execabs.CommandContext.
+// Warning should be generated.
+
+package main
+
+import (
+	"context"
+	"net/http"
+	"time"
+
+	"golang.org/x/sys/execabs"
+)
+
+func handler(w http.ResponseWriter, req *http.Request) {
+	cmdName := req.URL.Query().Get("cmd")
+	ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
+	cmd := execabs.CommandContext(ctx, cmdName)
+	// OpenRefactory Warning:
+	// Possible OS command injection!
+	// Path:
+	//	File: src.go, Line: 16
+	//		cmdName := req.URL.Query().Get("cmd")
+	//		Variable 'cmdName' is assigned a tainted value.
+	//	File: src.go, Line: 18
+	//		cmd := execabs.CommandContext(ctx, cmdName)
+	//		Variable 'cmd' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 19
+	//		cmd.Run()
+	//		Tainted information is used in a sink.
+	cmd.Run()
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

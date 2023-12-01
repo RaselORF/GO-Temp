@@ -1,0 +1,37 @@
+// Issue 89
+// Passing tainted data into fasthttp.Get can
+// result in request forgery.
+
+package main
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/valyala/fasthttp"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	urlParam := r.URL.Query().Get("url")
+	// OpenRefactory Warning:
+	// Possible Server-Side Request Forgery (SSRF) attack!
+	// Path:
+	//	File: src.go, Line: 15
+	//		urlParam := r.URL.Query().Get("url")
+	//		Variable 'urlParam' is assigned a tainted value.
+	//	File: src.go, Line: 16
+	//		fasthttp.Get(nil, urlParam)
+	//		Tainted information is used in a sink.
+	resp, err := fasthttp.Get(nil, urlParam) // User input is passed to the `url` variable
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	fmt.Printf("%s", resp.Body())
+	fmt.Fprintf(w, []byte("Hello World"))
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

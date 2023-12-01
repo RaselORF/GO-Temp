@@ -1,0 +1,30 @@
+// Issue 89
+// Writting tainted data into Context.Redirect can
+// result in Open Redirect attack.
+
+package main
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func handler(c *gin.Context) {
+	url := c.Param("url")
+	// OpenRefactory Warning:
+	// Possible Open Redirect attack!
+	// Path:
+	//	File: src.go, Line: 14
+	//		url := c.Param("url")
+	//		Variable 'url' is assigned a tainted value from an external source.
+	//	File: src.go, Line: 15
+	//		c.Redirect(http.StatusMovedPermanently, url)
+	//		Tainted information is used in a sink.
+	c.Redirect(http.StatusMovedPermanently, url)
+}
+func main() {
+	router := gin.Default()
+	router.GET("/redirect", handler)
+	router.Run(":8080")
+}

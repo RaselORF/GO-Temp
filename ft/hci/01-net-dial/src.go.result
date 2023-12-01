@@ -1,0 +1,25 @@
+// Issue 89
+// Avoid passing hard coded ip into net.Dial
+
+package main
+
+import (
+	"fmt"
+	"net"
+)
+
+func main() {
+	// OpenRefactory Warning:
+	// Possible Hard Coded IP!
+	// Path:
+	//	File: src.go, Line: 12
+	//		net.Dial("tcp", "127.0.0.1:80")
+	//		Tainted information is used in a sink.
+	conn, err := net.Dial("tcp", "127.0.0.1:80")
+	if err != nil {
+		fmt.Println("Error connecting:", err)
+		return
+	}
+
+	fmt.Println("Connected to", conn.RemoteAddr())
+}

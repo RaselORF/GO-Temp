@@ -1,0 +1,38 @@
+// Issue 263
+// Sensitive information should not be logged in plaint text.
+
+package testdata
+
+import (
+	"database/sql"
+	"fmt"
+	"log"
+	"os"
+)
+
+func ConnectDb() (*sql.DB, error) {
+	user := os.Getenv("POSTGRES_USER")
+	password := os.Getenv("POSTGRES_PASS")
+	dbName := os.Getenv("POSTGRES_NAME")
+
+	dbUrl := fmt.Sprintf(os.Getenv("PG_URL"), user, password, dbName)
+	var err error
+	DB, err := sql.Open("postgres", dbUrl)
+	if err != nil {
+		// OpenRefactory Warning:
+		// Possible Sensitive Data Leak!
+		// Path:
+		//	File: src.go, Line: 15
+		//		password := os.Getenv("POSTGRES_PASS")
+		//		Variable 'password' is assigned a tainted value.
+		//	File: src.go, Line: 18
+		//		dbUrl := fmt.Sprintf(os.Getenv("PG_URL"), user, password, dbName)
+		//		Variable 'dbUrl' is assigned a tainted value which is passed through a function call.
+		//	File: src.go, Line: 22
+		//		log.Println("Failed to connect to", dbUrl)
+		//		Tainted information is used in a sink.
+		log.Println("Failed to connect to", dbUrl)
+		return nil, err
+	}
+	return DB, nil
+}

@@ -1,0 +1,64 @@
+// Issue 89
+// Passing tainted data into logrus.Println can
+// result in log injection.
+package testdata
+
+import (
+	"net/http"
+
+	"github.com/sirupsen/logrus"
+)
+
+type School struct {
+	user User
+}
+type User struct {
+	username string
+	password string
+}
+
+func newUser(name string, pass string) User {
+	return User{
+		username: name,
+		password: pass,
+	}
+}
+func newSchool(user User) School {
+	return School{user: user}
+}
+
+func (s School) Log() {
+	// OpenRefactory Warning:
+	// Possible Log injection!
+	// Path:
+	//	File: src.go, Line: 35
+	//		username := req.URL.Query().Get("username")
+	//		Variable 'username' is assigned a tainted value.
+	//	File: src.go, Line: 37
+	//		user := newUser(username, password)
+	//		Variable 'user' is assigned a tainted value.
+	//	File: src.go, Line: 38
+	//		school := newSchool(user)
+	//		Variable 'school' is assigned a tainted value.
+	//	File: src.go, Line: 40
+	//		school.Log()
+	//		Tainted information is passed through the function call via 'school' to the receiver 's' through the field 'username' (from type User)
+	//	File: src.go, Line: 31
+	//		logrus.Println(s.user.username)
+	//		Tainted information is used in a sink.
+	logrus.Println(s.user.username)
+}
+
+func handler(w http.ResponseWriter, req *http.Request) {
+	username := req.URL.Query().Get("username")
+	password := req.URL.Query().Get("password")
+	user := newUser(username, password)
+	school := newSchool(user)
+	w.Write([]byte("Hello, world!"))
+	school.Log()
+
+}
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

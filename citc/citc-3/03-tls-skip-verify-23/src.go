@@ -1,0 +1,24 @@
+// Issue 23
+// Setting InsecureSkipVerify to true in tls.Config will
+// disable certificate verification.
+// Warning will be generated.
+
+package main
+
+import (
+	"crypto/tls"
+	"net/http"
+)
+
+func DoAuthReq(authReq *http.Request) *http.Response {
+	conf := tls.Config{}
+	conf.InsecureSkipVerify = true
+	tr := &http.Transport{
+		TLSClientConfig: &conf,
+	}
+	client := &http.Client{Transport: tr}
+	res, _ := client.Do(authReq)
+	return res
+}
+
+//<<<<<267, 297>>>>>

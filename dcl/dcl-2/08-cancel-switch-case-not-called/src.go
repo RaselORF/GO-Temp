@@ -1,0 +1,30 @@
+// Issue 198
+// Returned cancel function should be called in all paths.
+// Warning should be given.
+
+package testdata
+
+import (
+	"context"
+	"log"
+	"math/rand"
+	"os"
+)
+
+func _() {
+	_, cancel := context.WithCancel(context.Background())
+	switch r := rand.Int() % 5; r {
+	case 0:
+		panic("boom!")
+	case 1:
+		log.Fatal()
+	case 2:
+		cancel()
+	case 3:
+		print("Hello")
+	default:
+		os.Exit(1)
+	}
+}
+
+//<<<<<180, 233>>>>>

@@ -1,0 +1,19 @@
+// Shouldn't pass a nil Context, even if a function permits it.
+// Pass context.TODO if unsure about which Context to use.
+package testdata
+
+import (
+	"context"
+	"time"
+)
+
+func foo(c context.Context) {
+	_, cancel := context.WithTimeout(c, 5*time.Second)
+	defer cancel()
+}
+
+func main() {
+	foo(context.Background())
+}
+
+//<<<<<288, 296>>>>>

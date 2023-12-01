@@ -1,0 +1,53 @@
+// Issue 89
+// Passing tainted data into sqlx.qStmt.Get can
+// result in sql injection.
+
+package testdata
+
+import (
+	"fmt"
+	"net/http"
+	"os"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+type User struct {
+	ID    int    `db:"id"`
+	Name  string `db:"name"`
+	Email string `db:"email"`
+}
+
+func handler(w http.ResponseWriter, req *http.Request) {
+	connStr := os.Getenv("DbConnStr")
+	db, _ := sqlx.Connect("mysql", connStr)
+	defer db.Close()
+
+	username := req.FormValue("username")
+	password := req.FormValue("password")
+	query := fmt.Sprintf("SELECT * FROM users WHERE username='%s' AND password='%s'", username, password)
+
+	var user User
+	// OpenRefactory Warning:
+	// Possible SQL injection!
+	// Path:
+	//	File: src.go, Line: 27
+	//		username := req.FormValue("username")
+	//		Variable 'username' is assigned a tainted value from an external source.
+	//	File: src.go, Line: 28
+	//		password := req.FormValue("password")
+	//		Variable 'password' is assigned a tainted value from an external source.
+	//	File: src.go, Line: 29
+	//		query := fmt.Sprintf("SELECT * FROM users WHERE username='%s' AND password='%s'", username, password)
+	//		Variable 'query' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 32
+	//		db.Get(&user, query)
+	//		Tainted information is used in a sink.
+	db.Get(&user, query)
+	fmt.Print(user)
+}
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

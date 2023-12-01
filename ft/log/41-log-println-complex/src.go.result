@@ -1,0 +1,30 @@
+// Issue 89
+// Passing tainted data into log.
+// Warning should be generated.
+
+package main
+
+import (
+	"log"
+	"net/http"
+)
+
+func Log(logStr string) {
+	// OpenRefactory Warning:
+	// Possible Log injection!
+	// Path:
+	//	File: src.go, Line: 16
+	//		name := req.URL.Query().Get("username")
+	//		Variable 'name' is assigned a tainted value.
+	//	File: src.go, Line: 17
+	//		Log(name)
+	//		Tainted information is passed through the function call via 'name' to the parameter 'logStr'
+	//	File: src.go, Line: 13
+	//		log.Println(logStr)
+	//		Tainted information is used in a sink.
+	log.Println(logStr)
+}
+func HandleReq(req *http.Request) {
+	name := req.URL.Query().Get("username")
+	Log(name)
+}

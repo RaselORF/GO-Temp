@@ -1,0 +1,20 @@
+// Value of unsigned integer is non negative.
+// So, the expression 0 <= *a is always true.
+// CMC should generate a warning.
+
+package testdata
+
+import (
+	"fmt"
+)
+
+func check(a *uint8) {
+	// OpenRefactory Warning:
+	// Unsigned integer comparison should be meaningful.
+	// The expression '0 <= *a' will always evaluate to true.
+	if 0 <= *a {
+		fmt.Println("value is non-negative")
+	}
+}
+
+//<<<<<191, 198>>>>>

@@ -1,0 +1,41 @@
+// Issue 89
+// Passing tainted data into os.Create can
+// result in Path manipulation attack.
+
+package testdata
+
+import (
+	"net/http"
+	"os"
+	"path/filepath"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	fileName := r.URL.Query().Get("path")
+	filePath := "/home/abc/Desktop/"
+
+	fullpath := filepath.Join(filePath, fileName)
+	// OpenRefactory Warning:
+	// Possible Path manipulation attack!
+	// Path:
+	//	File: src.go, Line: 14
+	//		fileName := r.URL.Query().Get("path")
+	//		Variable 'fileName' is assigned a tainted value.
+	//	File: src.go, Line: 15
+	//		filePath := "/home/abc/Desktop/"
+	//		Variable 'filePath' is assigned a tainted value.
+	//	File: src.go, Line: 17
+	//		fullpath := filepath.Join(filePath, fileName)
+	//		Variable 'fullpath' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 18
+	//		os.Create(fullpath)
+	//		Tainted information is used in a sink.
+	file, _ := os.Create(fullpath)
+	defer file.Close()
+	w.Write([]byte("Hello"))
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

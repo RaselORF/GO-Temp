@@ -1,0 +1,42 @@
+// Issue 89
+// Writting tainted data into Ctx.PureJSON can
+// result in Cross-Site Scripting.
+
+package main
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+type Album struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+func main() {
+	router := gin.Default()
+
+	// Define a route that returns a JSON response with indentation
+	router.GET("/example", func(c *gin.Context) {
+		var newAlbum Album
+		if err := c.BindJSON(&newAlbum); err != nil {
+			fmt.Print(err)
+		}
+		// OpenRefactory Warning:
+		// Possible XSS attack!
+		// Path:
+		//	File: src.go, Line: 25
+		//		c.BindJSON(&newAlbum)
+		//		Tainted information is coming from an external source.
+		//	File: src.go, Line: 28
+		//		c.PureJSON(http.StatusCreated, newAlbum)
+		//		Tainted information is used in a sink.
+		c.PureJSON(http.StatusCreated, newAlbum)
+	})
+
+	// Start the server
+	router.Run(":8080")
+}

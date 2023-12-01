@@ -1,0 +1,39 @@
+// Issue 89
+// Should avoid Passing hard coded credential into X509.ParseCertificates
+
+package main
+
+import (
+	"crypto/x509"
+	"fmt"
+	"log"
+)
+
+func main() {
+	// Load the hard-coded certificate
+	certPEM := []byte(`-----BEGIN CERTIFICATE-----
+MIIC+zCCAeOgAwIBAgIULG+L6g2nrlU+jJ6UxMR6UkmUV6owDQYJKoZIhvcNAQEL
+BQAwDTELMAkGA1UEAxMCVGVzdDAeFw0yMDEyMjgxNjE3MTdaFw0zMDA4MjgxNjE3
+MTdaMA0xCzAJBgNVBAMTAkVFMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEzKpS
+kmllGn8mHlL4m4sEjKDFC2e3qz/9D2UP7osOXcmZiKTyNpOOtSpL29NcN/xfljKg
+FFVsjW9BvZ7VJfhwOqM7MDUGA1UdEQQqMCiCEG15LmV4YW1wbGUuY29tMAoGCCqG
+SM49BAMCA0gAMEUCIQC6A0UfW8zvR9Ih5eVWTnfYiwyWq3v2N5N5cSKtg8WRAQIg
+fM0bBQoO3f0q0yLzBtswltRt+99x+xWp7E/hMGltgMI=
+-----END CERTIFICATE-----`)
+
+	// Parse the certificate
+	// OpenRefactory Warning:
+	// Possible Hard Coded Key!
+	// Path:
+	//	File: src.go, Line: 14
+	//		certPEM := []byte(`-----BEGIN CERTIFICATE-----
+	//		Variable 'certPEM' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 25
+	//		x509.ParseCertificates(certPEM)
+	//		Tainted information is used in a sink.
+	cert, err := x509.ParseCertificates(certPEM)
+	if err != nil {
+		log.Fatal("Error parsing certificate:", err)
+	}
+	fmt.Print(cert)
+}

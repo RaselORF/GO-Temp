@@ -1,0 +1,24 @@
+// Issue 89
+// Writting tainted data into http.ResponseWriter can
+// result in exposure to Cross-Site Scripting.
+
+package main
+
+import (
+	"net/http"
+)
+
+func server(w http.ResponseWriter, r *http.Request) {
+	// OpenRefactory Warning:
+	// Possible XSS attack!
+	// Path:
+	//	File: src.go, Line: 12
+	//		w.Write([]byte("<div>" + r.URL.Query().Get("param") + "</div>"))
+	//		Tainted information is used in a sink.
+	w.Write([]byte("<div>" + r.URL.Query().Get("param") + "</div>"))
+}
+
+func main() {
+	http.HandleFunc("/", server)
+	http.ListenAndServe(":5000", nil)
+}

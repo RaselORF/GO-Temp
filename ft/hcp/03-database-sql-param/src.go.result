@@ -1,0 +1,32 @@
+// Issue 89
+// Should avoid Passing hard coded password while
+// creating db instance
+
+package main
+
+import (
+	"database/sql"
+	"fmt"
+)
+
+func Query(user, password string) {
+	connStr := fmt.Sprintf("postgres://%s:%s@localhost/pqgotest", user, password)
+	// OpenRefactory Warning:
+	// Possible Hard Coded Password!
+	// Path:
+	//	File: src.go, Line: 13
+	//		connStr := fmt.Sprintf("postgres://%s:%s@localhost/pqgotest", user, password)
+	//		Variable 'connStr' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 14
+	//		sql.Open("postgres", connStr)
+	//		Tainted information is used in a sink.
+	db, _ := sql.Open("postgres", connStr)
+	defer db.Close()
+
+	query := fmt.Sprintf("INSERT INTO users(username, password) VALUES (%s, %s)", "username", "password")
+	db.Exec(query)
+}
+
+func main() {
+	Query("user", "pass")
+}

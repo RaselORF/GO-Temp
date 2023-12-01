@@ -1,0 +1,19 @@
+// Issue 197
+// Using loop variables in defer statement.
+// deferred function call will observe wrong value
+// of the loop variable.
+// Fix should be generated.
+
+package testdata
+
+import "fmt"
+
+func _() {
+	for i := 0; i < 5; i++ {
+		defer func() {
+			fmt.Println(i)
+		}()
+	}
+}
+
+//<<<<<233, 271>>>>>

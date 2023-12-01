@@ -1,0 +1,68 @@
+// Issue 89
+// Passing tainted data into logger.Panicf can
+// result in log injection.
+package testdata
+
+import (
+	"net/http"
+
+	"os"
+
+	"github.com/apsdehal/go-logger"
+)
+
+type ICR struct {
+	users [10]User
+}
+type User struct {
+	username string
+	password string
+}
+
+func newUser(name string, pass string) User {
+	return User{
+		username: name,
+		password: pass,
+	}
+}
+
+func Log(icr ICR) {
+	logger, err := logger.New("MyLogger", 1, os.Stdout)
+	if err != nil {
+		panic(err)
+	}
+	// OpenRefactory Warning:
+	// Possible Log injection!
+	// Path:
+	//	File: src.go, Line: 38
+	//		username := req.URL.Query().Get("username")
+	//		Variable 'username' is assigned a tainted value.
+	//	File: src.go, Line: 41
+	//		user := newUser(username, password)
+	//		Variable 'user' is assigned a tainted value.
+	//	File: src.go, Line: 42
+	//		icr.users[0] = user
+	//		Variable 'icr.users[0]' is assigned a tainted value.
+	//	File: src.go, Line: 44
+	//		Log(icr)
+	//		Tainted information is passed through the function call via 'icr' to the parameter 'icr' through the field 'username' (from type User)
+	//	File: src.go, Line: 34
+	//		logger.Panicf("Failed to log in %s", icr.users[0].username)
+	//		Tainted information is used in a sink.
+	logger.Panicf("Failed to log in %s", icr.users[0].username)
+}
+
+func handler(w http.ResponseWriter, req *http.Request) {
+	username := req.URL.Query().Get("username")
+	password := req.URL.Query().Get("password")
+	var icr ICR
+	user := newUser(username, password)
+	icr.users[0] = user
+	w.Write([]byte("Hello, world!"))
+	Log(icr)
+
+}
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

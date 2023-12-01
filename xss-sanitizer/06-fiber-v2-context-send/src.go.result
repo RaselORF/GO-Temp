@@ -1,0 +1,31 @@
+// Issue 216
+// Writting tainted data into Ctx.Send can
+// result in XSS
+
+package main
+
+import (
+	"github.com/gofiber/fiber/v2"
+	"github.com/microcosm-cc/bluemonday"
+)
+
+func handler(ctx *fiber.Ctx) error {
+	name := ctx.Query("name")
+	// OpenRefactory Warning:
+	// Possible Cross-Site Scripting (XSS)!
+	// Path:
+	//	File: src.go, Line: 12
+	//		name := ctx.Query("name")
+	//		Variable 'name' is assigned a tainted value from an external source.
+	//	File: src.go, Line: 13
+	//		ctx.Send([]byte(name))
+	//		Tainted information is passed through a function call and is used in a sink.
+	// Fix: iCR sanitizes the tainted input.
+	return ctx.Send(bluemonday.UGCPolicy().SanitizeBytes([]byte(name)))
+}
+
+func main() {
+	app := fiber.New()
+	app.Get("/", handler)
+	app.Listen(":3000")
+}

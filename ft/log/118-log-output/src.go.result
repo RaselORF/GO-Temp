@@ -1,0 +1,63 @@
+// Issue 89
+// Passing tainted data into log.Output can
+// result in log injection.
+package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+)
+
+type User struct {
+	username string
+	password string
+}
+
+func newUser(name string, pass string) User {
+	return User{
+		username: name,
+		password: pass,
+	}
+}
+
+func Log(userArr [10]User, i int) {
+	logStr := fmt.Sprintf("Failed to log user %s", userArr[i].username)
+	// OpenRefactory Warning:
+	// Possible Log injection!
+	// Path:
+	//	File: src.go, Line: 30
+	//		username := req.URL.Query().Get("username")
+	//		Variable 'username' is assigned a tainted value.
+	//	File: src.go, Line: 33
+	//		user := newUser(username, password)
+	//		Variable 'user' is assigned a tainted value.
+	//	File: src.go, Line: 34
+	//		userArr[0] = user
+	//		Variable 'userArr[0]' is assigned a tainted value.
+	//	File: src.go, Line: 36
+	//		Log(userArr, 0)
+	//		Tainted information is passed through the function call via 'userArr' to the parameter 'userArr' through the field 'username' (from type User)
+	//	File: src.go, Line: 25
+	//		logStr := fmt.Sprintf("Failed to log user %s", userArr[i].username)
+	//		Variable 'logStr' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 26
+	//		log.Output(2, logStr)
+	//		Tainted information is used in a sink.
+	log.Output(2, logStr)
+}
+
+func handler(w http.ResponseWriter, req *http.Request) {
+	username := req.URL.Query().Get("username")
+	password := req.URL.Query().Get("password")
+	var userArr [10]User
+	user := newUser(username, password)
+	userArr[0] = user
+	w.Write([]byte("Hello, world!"))
+	Log(userArr, 0)
+
+}
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

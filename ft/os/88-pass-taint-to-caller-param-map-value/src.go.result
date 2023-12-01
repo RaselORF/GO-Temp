@@ -1,0 +1,66 @@
+// Issue 126
+// During assignment to field of map element
+//		entry = mp[key]
+//		entry.x = taint
+// we don't update the value edge, but pass
+// taints from the value to the field location.
+// Test for passing taint through the field locations
+// of map value from param to caller method.
+
+package main
+
+import (
+	"net/http"
+	"os/exec"
+)
+
+type Box struct {
+	data string
+}
+
+func HandleReq(req *http.Request) {
+	bm := make(map[string]Box)
+	bar(req, bm)
+	foo(bm)
+}
+
+func bar(req *http.Request, mp map[string]Box) {
+	vals := req.URL.Query()
+	cmdName := vals.Get("cmd")
+	bx := Box{cmdName}
+	mp["cmd"] = bx
+}
+
+func foo(pm map[string]Box) {
+	for _, bx := range pm {
+		cmd := exec.Command(bx.data)
+		// OpenRefactory Warning:
+		// Possible OS command injection!
+		// Path:
+		//	File: src.go, Line: 28
+		//		vals := req.URL.Query()
+		//		Variable 'vals' is assigned a tainted value from an external source.
+		//	File: src.go, Line: 29
+		//		cmdName := vals.Get("cmd")
+		//		Variable 'cmdName' is assigned a tainted value which is passed through a function call.
+		//	File: src.go, Line: 30
+		//		Box{cmdName}
+		//		Field 'data' (from type Box) is assigned a tainted value.
+		//	File: src.go, Line: 30
+		//		bx := Box{cmdName}
+		//		Variable 'bx' is assigned a tainted value.
+		//	File: src.go, Line: 31
+		//		mp["cmd"] = bx
+		//		Variable 'mp["cmd"]' is assigned a tainted value.
+		//	File: src.go, Line: 24
+		//		foo(bm)
+		//		Tainted information is passed through the function call via 'bm' to the parameter 'pm' through the field 'data' (from type Box)
+		//	File: src.go, Line: 36
+		//		cmd := exec.Command(bx.data)
+		//		Variable 'cmd' is assigned a tainted value which is passed through a function call.
+		//	File: src.go, Line: 37
+		//		cmd.Run()
+		//		Tainted information is used in a sink.
+		cmd.Run()
+	}
+}

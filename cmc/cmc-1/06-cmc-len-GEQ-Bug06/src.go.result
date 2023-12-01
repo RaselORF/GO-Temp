@@ -1,0 +1,21 @@
+// len(x) will return non negative value.
+// so the expression len(a) >= 0 is always true.
+// CMC should generate a warning.
+
+package testdata
+
+import (
+	"fmt"
+)
+
+func test() {
+	var a [10]int
+	// OpenRefactory Warning:
+	// len or cap comparison should be meaningful.
+	// The expression 'len(a) >= 0' will always evaluate to true.
+	if len(a) >= 0 {
+		fmt.Println("Length of an array found negative")
+	}
+}
+
+//<<<<<196, 207>>>>>

@@ -1,0 +1,52 @@
+// Issue 266
+// Using untrusted input to construct an email is security sensitive.
+// Warning will be given.
+
+package main
+
+import (
+	"net/http"
+	"os"
+
+	"gopkg.in/gomail.v2"
+)
+
+func mailHandler(w http.ResponseWriter, r *http.Request) {
+	recvMail := r.Form.Get("recv-mail")
+	m := gomail.NewMessage()
+	m.SetHeader("From", "alex@example.com")
+	m.SetHeader("To", recvMail)
+	m.SetAddressHeader("Cc", "dan@example.com", "Dan")
+	m.SetHeader("Subject", "Hello!")
+	m.SetBody("text/html", "Welcome!")
+
+	d := gomail.NewDialer("smtp.example.com", 587, "user", os.Getenv("PWD"))
+
+	// OpenRefactory Warning:
+	// Possible Email injection!
+	// Path:
+	//	File: src.go, Line: 15
+	//		recvMail := r.Form.Get("recv-mail")
+	//		Variable 'recvMail' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 17
+	//		m.SetHeader("From", "alex@example.com")
+	//		Tainted information passed through a function call.
+	//	File: src.go, Line: 18
+	//		m.SetHeader("To", recvMail)
+	//		Tainted information passed through a function call.
+	//	File: src.go, Line: 19
+	//		m.SetAddressHeader("Cc", "dan@example.com", "Dan")
+	//		Tainted information passed through a function call.
+	//	File: src.go, Line: 20
+	//		m.SetHeader("Subject", "Hello!")
+	//		Tainted information passed through a function call.
+	//	File: src.go, Line: 21
+	//		m.SetBody("text/html", "Welcome!")
+	//		Tainted information passed through a function call.
+	//	File: src.go, Line: 25
+	//		d.DialAndSend(m)
+	//		Tainted information is used in a sink.
+	if err := d.DialAndSend(m); err != nil {
+		panic(err)
+	}
+}

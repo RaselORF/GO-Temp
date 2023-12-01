@@ -1,0 +1,38 @@
+// Issue 89
+// Passing tainted data into exec.CommandContext.
+// Warning should be generated.
+
+package testdata
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"os/exec"
+	"time"
+)
+
+func handler(w http.ResponseWriter, req *http.Request) {
+	cmdName := req.URL.Query().Get("cmd")
+	ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
+	cmd := exec.CommandContext(ctx, cmdName)
+	// OpenRefactory Warning:
+	// Possible OS command injection!
+	// Path:
+	//	File: src.go, Line: 16
+	//		cmdName := req.URL.Query().Get("cmd")
+	//		Variable 'cmdName' is assigned a tainted value.
+	//	File: src.go, Line: 18
+	//		cmd := exec.CommandContext(ctx, cmdName)
+	//		Variable 'cmd' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 19
+	//		cmd.Output()
+	//		Tainted information is used in a sink.
+	op, _ := cmd.Output()
+	fmt.Fprintln(w, string(op))
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

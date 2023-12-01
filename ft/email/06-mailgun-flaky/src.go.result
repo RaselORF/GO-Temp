@@ -1,0 +1,103 @@
+// Issue 266
+// Using untrusted input to construct an email is security sensitive.
+// Warning will be given.
+
+package main
+
+import (
+	"context"
+	"crypto/rand"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/mailgun/mailgun-go/v4"
+)
+
+var domain string = os.Getenv("DOMAIN")
+var privateAPIKey string = os.Getenv("KEY")
+
+func mailHandler(w http.ResponseWriter, r *http.Request) {
+	mg := mailgun.NewMailgun(domain, privateAPIKey)
+
+	sender := "sender@example.com"
+	subject := "Fancy subject!"
+	body := ""
+	recipient := "recipient@example.com"
+
+	message := mg.NewMessage(sender, subject, body, recipient)
+	message.SetTemplate("passwordReset")
+	link, err := getLink(r)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = message.AddTemplateVariable("passwordResetLink", link)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	// OpenRefactory Warning:
+	// Possible Email injection!
+	// Path:
+	//	File: src.go, Line: 25
+	//		sender := "sender@example.com"
+	//		Variable 'sender' is assigned a tainted value.
+	//	File: src.go, Line: 26
+	//		subject := "Fancy subject!"
+	//		Variable 'subject' is assigned a tainted value.
+	//	File: src.go, Line: 27
+	//		body := ""
+	//		Variable 'body' is assigned a tainted value.
+	//	File: src.go, Line: 28
+	//		recipient := "recipient@example.com"
+	//		Variable 'recipient' is assigned a tainted value.
+	//	File: src.go, Line: 30
+	//		message := mg.NewMessage(sender, subject, body, recipient)
+	//		Variable 'message' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 56
+	//		return "", err
+	//		A tainted value is returned from the function call.
+	//	File: src.go, Line: 58
+	//		resetToken := fmt.Sprintf("%x", token)
+	//		Variable 'resetToken' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 59
+	//		link := "%s/reset-password?token=%s"
+	//		Variable 'link' is assigned a tainted value.
+	//	File: src.go, Line: 60
+	//		return fmt.Sprintf(link, r.Host, resetToken), nil
+	//		A tainted value is returned from the function call.
+	//	File: src.go, Line: 32
+	//		link, err := getLink(r)
+	//		Variable 'link' is assigned a tainted value.
+	//	File: src.go, Line: 32
+	//		link, err := getLink(r)
+	//		Variable 'link' is assigned a tainted value.
+	//	File: src.go, Line: 36
+	//		message.AddTemplateVariable("passwordResetLink", link)
+	//		Tainted information passed through a function call.
+	//	File: src.go, Line: 44
+	//		mg.Send(ctx, message)
+	//		Tainted information is used in a sink.
+	resp, id, err := mg.Send(ctx, message)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("ID: %s Resp: %s\n", id, resp)
+}
+
+func getLink(r *http.Request) (string, error) {
+	token := make([]byte, 32) // Generate a 32-byte random token
+	_, err := rand.Read(token)
+	if err != nil {
+		return "", err
+	}
+	resetToken := fmt.Sprintf("%x", token)
+	link := "%s/reset-password?token=%s"
+	return fmt.Sprintf(link, r.Host, resetToken), nil
+}

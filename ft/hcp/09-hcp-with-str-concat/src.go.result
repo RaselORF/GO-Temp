@@ -1,0 +1,31 @@
+// Issue 89
+// Should avoid Passing hard coded password while
+// creating db instance
+
+package main
+
+import (
+	"database/sql"
+	"fmt"
+)
+
+func main() {
+	pgpass := "admin"
+	connStr := "user=or dbname=pg password=" + pgpass + "sslmode=verify-full"
+	// OpenRefactory Warning:
+	// Possible Hard Coded Password!
+	// Path:
+	//	File: src.go, Line: 13
+	//		pgpass := "admin"
+	//		Variable 'pgpass' is assigned a tainted value.
+	//	File: src.go, Line: 14
+	//		connStr := "user=or dbname=pg password=" + pgpass + "sslmode=verify-full"
+	//		Variable 'connStr' is assigned a tainted value.
+	//	File: src.go, Line: 15
+	//		sql.Open("postgres", connStr)
+	//		Tainted information is used in a sink.
+	db, _ := sql.Open("postgres", connStr)
+	defer db.Close()
+	query := fmt.Sprintf("INSERT INTO users(username, password) VALUES (%s, %s)", "username", "admin")
+	db.Exec(query)
+}

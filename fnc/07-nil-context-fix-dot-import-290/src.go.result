@@ -1,0 +1,21 @@
+// Issue 290
+// context package is imported with dot import.
+// Generate fix correctly.
+
+package testdata
+
+import (
+	. "context"
+	"time"
+)
+
+func foo(c Context) {
+	_, cancel := WithTimeout(c, 5*time.Second)
+	defer cancel()
+}
+
+func main() {
+	foo(Background())
+}
+
+//<<<<<240, 248>>>>>

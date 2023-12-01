@@ -1,0 +1,35 @@
+// Issue 89
+// Should avoid Passing hard coded credential into tls.X509KeyPair
+
+package main
+
+import (
+	"crypto/tls"
+	"fmt"
+	"log"
+	"os"
+)
+
+func main() {
+	certPEM := []byte(os.Getenv("CertPem"))
+	keyPEM := []byte("-----BEGIN PRIVATE KEY-----" +
+		"MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgUwukxU6jIyoZZZ1U" +
+		"uoC8W9S0QQvfehNc7NFnLTr8WFKhRANCAATMqlKaWUafyYeUviY7iwSMoMULZ7er" +
+		"P/0PZQ/uiw5dyZmIpPI2k4661Kkvb01w3/F+WMqAUVWyNb0G9ntUl+HA" +
+		"-----END PRIVATE KEY-----")
+
+	// OpenRefactory Warning:
+	// Possible Hard Coded Key!
+	// Path:
+	//	File: src.go, Line: 15
+	//		keyPEM := []byte("-----BEGIN PRIVATE KEY-----" +
+	//		Variable 'keyPEM' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 21
+	//		tls.X509KeyPair(certPEM, keyPEM)
+	//		Tainted information is used in a sink.
+	cert, err := tls.X509KeyPair(certPEM, keyPEM)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Print(cert)
+}

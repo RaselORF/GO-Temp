@@ -1,0 +1,53 @@
+// Issue 126
+// During assignment to array element
+//		arr[i] = value
+// we don't update the value edge, but pass
+// taints from the value to the array location.
+// Test for passing taint through array locations
+// from param to caller method.
+
+package main
+
+import (
+	"net/http"
+	"os/exec"
+)
+
+func HandleReq(req *http.Request) {
+	commands := make([]string, 3)
+	foo(req, commands)
+	bar(commands)
+}
+
+func foo(req *http.Request, commands []string) {
+	vals := req.URL.Query()
+	commands[0] = vals.Get("cmd")
+}
+
+func bar(cmdList []string) {
+	for _, cmdStr := range cmdList {
+		cmd := exec.Command(cmdStr)
+		// OpenRefactory Warning:
+		// Possible OS command injection!
+		// Path:
+		//	File: src.go, Line: 23
+		//		vals := req.URL.Query()
+		//		Variable 'vals' is assigned a tainted value from an external source.
+		//	File: src.go, Line: 24
+		//		commands[0] = vals.Get("cmd")
+		//		Variable 'commands[0]' is assigned a tainted value which is passed through a function call.
+		//	File: src.go, Line: 19
+		//		bar(commands)
+		//		Tainted information is passed through the function call via 'commands' to the parameter 'cmdList'
+		//	File: src.go, Line: 28
+		//		for _, cmdStr := range cmdList {
+		//		Variable 'cmdStr' is assigned a tainted value.
+		//	File: src.go, Line: 29
+		//		cmd := exec.Command(cmdStr)
+		//		Variable 'cmd' is assigned a tainted value which is passed through a function call.
+		//	File: src.go, Line: 30
+		//		cmd.Run()
+		//		Tainted information is used in a sink.
+		cmd.Run()
+	}
+}

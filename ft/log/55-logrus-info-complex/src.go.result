@@ -1,0 +1,54 @@
+// Issue 89
+// Passing tainted data into logrus.Info can
+// result in log injection.
+package testdata
+
+import (
+	"net/http"
+
+	"github.com/sirupsen/logrus"
+)
+
+type User struct {
+	username string
+	password string
+}
+
+func modUser(user User) User {
+	user.password = "newPass"
+	return user
+}
+func newUser(name string, pass string) User {
+	return User{
+		username: name,
+		password: pass,
+	}
+}
+func handler(w http.ResponseWriter, req *http.Request) {
+	username := req.URL.Query().Get("username")
+	password := req.URL.Query().Get("password")
+	user := newUser(username, password)
+	user = modUser(user)
+	// OpenRefactory Warning:
+	// Possible Log injection!
+	// Path:
+	//	File: src.go, Line: 28
+	//		username := req.URL.Query().Get("username")
+	//		Variable 'username' is assigned a tainted value.
+	//	File: src.go, Line: 30
+	//		user := newUser(username, password)
+	//		Variable 'user' is assigned a tainted value.
+	//	File: src.go, Line: 31
+	//		user = modUser(user)
+	//		Variable 'user' is assigned a tainted value.
+	//	File: src.go, Line: 32
+	//		logrus.Info(user.username)
+	//		Tainted information is used in a sink.
+	logrus.Info(user.username)
+	w.Write([]byte("Hello, world!"))
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

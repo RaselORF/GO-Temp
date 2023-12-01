@@ -1,0 +1,26 @@
+// Issue 89
+// Passing tainted data into logger.Print can
+// result in log injection.
+package testdata
+
+import (
+	"log"
+	"net/http"
+	"os"
+)
+
+func handler(req *http.Request) {
+	username := req.URL.Query().Get("username")
+	password := req.URL.Query().Get("password")
+	logger := log.New(os.Stdout, "", log.LstdFlags)
+	// OpenRefactory Warning:
+	// Possible Log injection!
+	// Path:
+	//	File: src.go, Line: 13
+	//		username := req.URL.Query().Get("username")
+	//		Variable 'username' is assigned a tainted value.
+	//	File: src.go, Line: 16
+	//		logger.Printf("User %s logged in with password %s", username, password)
+	//		Tainted information is used in a sink.
+	logger.Printf("User %s logged in with password %s", username, password)
+}

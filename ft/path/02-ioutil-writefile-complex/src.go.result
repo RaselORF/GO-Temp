@@ -1,0 +1,42 @@
+// Issue 89
+// Passing tainted data into ioutil.WriteFile can
+// result in Path manipulation attack.
+
+package main
+
+import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
+)
+
+func getFilePath(req *http.Request) string {
+	return req.URL.Query().Get("path")
+}
+func handler(w http.ResponseWriter, r *http.Request) {
+	path := getFilePath(r)
+	data := []byte("Hello, world!")
+	// OpenRefactory Warning:
+	// Possible Path manipulation attack!
+	// Path:
+	//	File: src.go, Line: 14
+	//		return req.URL.Query().Get("path")
+	//		A tainted value is returned from the function call.
+	//	File: src.go, Line: 17
+	//		path := getFilePath(r)
+	//		Variable 'path' is assigned a tainted value.
+	//	File: src.go, Line: 19
+	//		ioutil.WriteFile(path, data, 0644)
+	//		Tainted information is used in a sink.
+	err := ioutil.WriteFile(path, data, 0644)
+	if err != nil {
+		fmt.Println("Error writing file:", err)
+		return
+	}
+	w.Write([]byte("Hello, world!"))
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

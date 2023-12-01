@@ -1,0 +1,25 @@
+// Issue 89
+// Passing stack trace into log.
+// Warning shouldn't be generated.
+
+package main
+
+import (
+	"log"
+	"net/http"
+	"runtime/debug"
+)
+
+func HandleReq(req *http.Request) {
+	buf := debug.Stack()
+	// OpenRefactory Warning:
+	// Possible Log injection!
+	// Path:
+	//	File: src.go, Line: 14
+	//		buf := debug.Stack()
+	//		Variable 'buf' is assigned a tainted value from an external source.
+	//	File: src.go, Line: 15
+	//		log.Println(buf)
+	//		Tainted information is used in a sink.
+	log.Println(buf)
+}

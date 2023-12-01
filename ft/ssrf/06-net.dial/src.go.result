@@ -1,0 +1,36 @@
+// Issue 89
+// Passing tainted data into net.Dial can
+// result in request forgery.
+
+package main
+
+import (
+	"fmt"
+	"net"
+	"net/http"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	address := r.URL.Query().Get("address")
+	// OpenRefactory Warning:
+	// Possible Server-Side Request Forgery (SSRF) attack!
+	// Path:
+	//	File: src.go, Line: 14
+	//		address := r.URL.Query().Get("address")
+	//		Variable 'address' is assigned a tainted value.
+	//	File: src.go, Line: 15
+	//		net.Dial("tcp", address)
+	//		Tainted information is used in a sink.
+	conn, err := net.Dial("tcp", address)
+	if err != nil {
+		fmt.Fprintf(w, "Error connecting to address: %v", err)
+		return
+	}
+	defer conn.Close()
+	fmt.Fprintf(w, "Success")
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

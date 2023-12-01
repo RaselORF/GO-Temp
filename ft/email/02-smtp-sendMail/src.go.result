@@ -1,0 +1,28 @@
+// Issue 266
+// Using untrusted input to construct an email is security sensitive.
+// Warning will be given.
+
+package main
+
+import (
+	"net/http"
+	"net/smtp"
+)
+
+func mailHandler(w http.ResponseWriter, r *http.Request) {
+	user := r.Form.Get("user")
+	body := "Hello " + user + "Welcome"
+	// OpenRefactory Warning:
+	// Possible Email injection!
+	// Path:
+	//	File: src.go, Line: 13
+	//		user := r.Form.Get("user")
+	//		Variable 'user' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 14
+	//		body := "Hello " + user + "Welcome"
+	//		Variable 'body' is assigned a tainted value.
+	//	File: src.go, Line: 15
+	//		smtp.SendMail("test.test", nil, "from@from.com", nil, []byte(body))
+	//		Tainted information is passed through a function call and is used in a sink.
+	smtp.SendMail("test.test", nil, "from@from.com", nil, []byte(body))
+}

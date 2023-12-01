@@ -1,0 +1,65 @@
+// Issue 89
+// Passing tainted data into glog.InfoDepth can
+// result in log injection.
+package main
+
+import (
+	"net/http"
+
+	"github.com/golang/glog"
+)
+
+type User struct {
+	username string
+	password string
+}
+
+type School struct {
+	user User
+}
+
+func newSchool(user User) School {
+	return School{
+		user: user,
+	}
+}
+func newUser(name string, pass string) User {
+	return User{
+		username: name,
+		password: pass,
+	}
+}
+
+func Log(school School) {
+	// OpenRefactory Warning:
+	// Possible Log injection!
+	// Path:
+	//	File: src.go, Line: 40
+	//		username := req.URL.Query().Get("username")
+	//		Variable 'username' is assigned a tainted value.
+	//	File: src.go, Line: 42
+	//		school := newSchool(newUser(username, password))
+	//		Variable 'school' is assigned a tainted value.
+	//	File: src.go, Line: 44
+	//		Log(school)
+	//		Tainted information is passed through the function call via 'school' to the parameter 'school' through the field 'username' (from type User)
+	//	File: src.go, Line: 34
+	//		glog.InfoDepthf(1, school.user.username)
+	//		Tainted information is used in a sink.
+	glog.InfoDepthf(1, school.user.username)
+	// Flush the log to ensure all messages are written
+	defer glog.Flush()
+}
+
+func handler(w http.ResponseWriter, req *http.Request) {
+	username := req.URL.Query().Get("username")
+	password := req.URL.Query().Get("password")
+	school := newSchool(newUser(username, password))
+	w.Write([]byte("Hello, world!"))
+	Log(school)
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

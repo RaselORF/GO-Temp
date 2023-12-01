@@ -1,0 +1,29 @@
+// Issue 89
+// Avoid passing hard coded ip into net.Dial
+
+package main
+
+import (
+	"fmt"
+	"net/http"
+)
+
+func main() {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hello, World!")
+	})
+	// OpenRefactory Warning:
+	// Possible Hard Coded IP!
+	// Path:
+	//	File: src.go, Line: 19
+	//		return "127.0.0.1:8080"
+	//		A tainted value is returned from the function call.
+	//	File: src.go, Line: 15
+	//		http.ListenAndServe(getIP(), nil)
+	//		Tainted information is used in a sink.
+	http.ListenAndServe(getIP(), nil)
+}
+
+func getIP() string {
+	return "127.0.0.1:8080"
+}

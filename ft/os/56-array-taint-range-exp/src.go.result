@@ -1,0 +1,60 @@
+// Issue 126
+// Passing tainted data via array
+// element used inside range expression
+
+package main
+
+import (
+	"net/http"
+	"os/exec"
+)
+
+type Box struct {
+	data string
+}
+
+func HandleReq(req *http.Request) {
+	vals := req.URL.Query()
+	cmdName := vals.Get("cmd")
+	bx := Box{cmdName}
+	var ba [5]Box
+	ba[0] = bx
+	foo(ba)
+}
+
+func foo(b [5]Box) {
+	for _, entry := range b {
+		cmd := exec.Command(entry.data)
+		// OpenRefactory Warning:
+		// Possible OS command injection!
+		// Path:
+		//	File: src.go, Line: 17
+		//		vals := req.URL.Query()
+		//		Variable 'vals' is assigned a tainted value from an external source.
+		//	File: src.go, Line: 18
+		//		cmdName := vals.Get("cmd")
+		//		Variable 'cmdName' is assigned a tainted value which is passed through a function call.
+		//	File: src.go, Line: 19
+		//		Box{cmdName}
+		//		Field 'data' (from type Box) is assigned a tainted value.
+		//	File: src.go, Line: 19
+		//		bx := Box{cmdName}
+		//		Variable 'bx' is assigned a tainted value.
+		//	File: src.go, Line: 21
+		//		ba[0] = bx
+		//		Variable 'ba[0]' is assigned a tainted value.
+		//	File: src.go, Line: 22
+		//		foo(ba)
+		//		Tainted information is passed through the function call via 'ba' to the parameter 'b' through the field 'data' (from type Box)
+		//	File: src.go, Line: 26
+		//		for _, entry := range b {
+		//		Variable 'entry' is assigned a tainted value.
+		//	File: src.go, Line: 27
+		//		cmd := exec.Command(entry.data)
+		//		Variable 'cmd' is assigned a tainted value which is passed through a function call.
+		//	File: src.go, Line: 28
+		//		cmd.Run()
+		//		Tainted information is used in a sink.
+		cmd.Run()
+	}
+}

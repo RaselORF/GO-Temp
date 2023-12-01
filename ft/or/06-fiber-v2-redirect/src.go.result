@@ -1,0 +1,28 @@
+// Issue 89
+// Writting tainted data into Context.Redirect can
+// result in Open Redirect attack.
+
+package main
+
+import (
+	"github.com/gofiber/fiber/v2"
+)
+
+func handler(c *fiber.Ctx) error {
+	url := c.Query("url")
+	// OpenRefactory Warning:
+	// Possible Open Redirect attack!
+	// Path:
+	//	File: src.go, Line: 12
+	//		url := c.Query("url")
+	//		Variable 'url' is assigned a tainted value from an external source.
+	//	File: src.go, Line: 13
+	//		c.Redirect(url, fiber.StatusMovedPermanently)
+	//		Tainted information is used in a sink.
+	return c.Redirect(url, fiber.StatusMovedPermanently)
+}
+func main() {
+	app := fiber.New()
+	app.Get("/redirect", handler)
+	app.Listen(":8080")
+}

@@ -1,0 +1,40 @@
+// Issue 142
+// Passing tainted data as return value to
+// caller function from variadic callee function.
+// Warning should be generated.
+
+package main
+
+import (
+	"net/http"
+	"os/exec"
+)
+
+func HandleReq(req *http.Request) {
+	cmdName := GetCmdName(req)
+	cmd := exec.Command(cmdName)
+	// OpenRefactory Warning:
+	// Possible OS command injection!
+	// Path:
+	//	File: src.go, Line: 20
+	//		vals := req.URL.Query()
+	//		Variable 'vals' is assigned a tainted value from an external source.
+	//	File: src.go, Line: 21
+	//		return vals.Get("cmd")
+	//		A tainted value is returned from the function call.
+	//	File: src.go, Line: 14
+	//		cmdName := GetCmdName(req)
+	//		Variable 'cmdName' is assigned a tainted value.
+	//	File: src.go, Line: 15
+	//		cmd := exec.Command(cmdName)
+	//		Variable 'cmd' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 16
+	//		cmd.Run()
+	//		Tainted information is used in a sink.
+	cmd.Run()
+}
+
+func GetCmdName(req *http.Request, data ...string) string {
+	vals := req.URL.Query()
+	return vals.Get("cmd")
+}

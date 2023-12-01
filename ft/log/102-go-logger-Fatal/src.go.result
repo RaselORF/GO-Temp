@@ -1,0 +1,69 @@
+// Issue 89
+// Passing tainted data into logger.Fatal can
+// result in log injection.
+package main
+
+import (
+	"fmt"
+	"net/http"
+
+	"os"
+
+	"github.com/apsdehal/go-logger"
+)
+
+type User struct {
+	username string
+	password string
+}
+
+func newUser(name string, pass string) *User {
+	return &User{
+		username: name,
+		password: pass,
+	}
+}
+
+func getUser(req *http.Request) User {
+	return *newUser(req.URL.Query().Get("username"), "pass")
+}
+func getUserName(req *http.Request) string {
+	user := getUser(req)
+	return user.username
+}
+func handler(w http.ResponseWriter, req *http.Request) {
+	username := getUserName(req)
+	w.Write([]byte("Hello, world!"))
+	logger, err := logger.New("MyLogger", 1, os.Stdout)
+	if err != nil {
+		panic(err)
+	}
+	logStr := fmt.Sprintf("Failed to log in %s", username)
+	// OpenRefactory Warning:
+	// Possible Log injection!
+	// Path:
+	//	File: src.go, Line: 28
+	//		return *newUser(req.URL.Query().Get("username"), "pass")
+	//		A tainted value is returned from the function call.
+	//	File: src.go, Line: 31
+	//		user := getUser(req)
+	//		Variable 'user' is assigned a tainted value.
+	//	File: src.go, Line: 32
+	//		return user.username
+	//		A tainted value is returned from the function call.
+	//	File: src.go, Line: 35
+	//		username := getUserName(req)
+	//		Variable 'username' is assigned a tainted value.
+	//	File: src.go, Line: 41
+	//		logStr := fmt.Sprintf("Failed to log in %s", username)
+	//		Variable 'logStr' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 42
+	//		logger.Fatal(logStr)
+	//		Tainted information is used in a sink.
+	logger.Fatal(logStr)
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

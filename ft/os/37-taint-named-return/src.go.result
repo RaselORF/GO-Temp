@@ -1,0 +1,49 @@
+// Issue 125
+// Test for taint inside named return
+
+package main
+
+import (
+	"net/http"
+	"os/exec"
+)
+
+func HandleReq(req *http.Request) {
+	foo(getVals(req))
+}
+
+func foo(cmdName, def string) {
+	bar(cmdName, def)
+}
+
+func bar(cmdStr, def string) {
+	cmd := exec.Command(cmdStr)
+	// OpenRefactory Warning:
+	// Possible OS command injection!
+	// Path:
+	//	File: src.go, Line: 25
+	//		vals := req.URL.Query()
+	//		Variable 'vals' is assigned a tainted value from an external source.
+	//	File: src.go, Line: 26
+	//		def, cmdName = "pwd", vals.Get("cmd")
+	//		Variable 'cmdName' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 12
+	//		foo(getVals(req))
+	//		Tainted information is passed through the function call via 'getVals(req)' to the parameter 'cmdName'
+	//	File: src.go, Line: 16
+	//		bar(cmdName, def)
+	//		Tainted information is passed through the function call via 'cmdName' to the parameter 'cmdStr'
+	//	File: src.go, Line: 20
+	//		cmd := exec.Command(cmdStr)
+	//		Variable 'cmd' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 21
+	//		cmd.Run()
+	//		Tainted information is used in a sink.
+	cmd.Run()
+}
+
+func getVals(req *http.Request) (cmdName string, def string) {
+	vals := req.URL.Query()
+	def, cmdName = "pwd", vals.Get("cmd")
+	return
+}

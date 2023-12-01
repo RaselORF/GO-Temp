@@ -1,0 +1,41 @@
+// Issue 89
+// Passing tainted data into HostClient.Post can
+// result in request forgery.
+
+package main
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/valyala/fasthttp"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	urlParam := r.URL.Query().Get("url")
+	// Create a new HTTP client
+	client := &fasthttp.HostClient{
+		Addr: "example.com:80",
+	}
+	// Create the post arguments
+	args := &fasthttp.Args{}
+	args.Add("username", "johndoe")
+	args.Add("password", "secretpassword")
+	// OpenRefactory Warning:
+	// Possible Server-Side Request Forgery (SSRF) attack!
+	// Path:
+	//	File: src.go, Line: 15
+	//		urlParam := r.URL.Query().Get("url")
+	//		Variable 'urlParam' is assigned a tainted value.
+	//	File: src.go, Line: 24
+	//		client.Post(nil, urlParam, args)
+	//		Tainted information is used in a sink.
+	resp := client.Post(nil, urlParam, args)
+	fmt.Printf("Response body: %s\n", resp)
+	fmt.Fprintf(w, []byte("Hello World"))
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

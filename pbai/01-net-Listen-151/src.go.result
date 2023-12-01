@@ -1,0 +1,26 @@
+// Issue 151
+// Binding to all network interfaces
+
+package testdata
+
+import (
+	"log"
+	"net"
+)
+
+func main() {
+	// OpenRefactory Warning:
+	// Binding to all network interfaces is security-sensitive.
+	ln, err := net.Listen("tcp", ":8080")
+	if err != nil {
+		log.Print(err)
+	}
+	for {
+		_, err := ln.Accept()
+		if err != nil {
+			log.Print(err)
+		}
+	}
+}
+
+//<<<<<121, 147>>>>>

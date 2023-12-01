@@ -1,0 +1,29 @@
+// Issue 89
+// Writting tainted data into Ctx.Send can
+// result in Cross-Site Scripting.
+
+package main
+
+import (
+	"github.com/gofiber/fiber"
+)
+
+func main() {
+	app := fiber.New()
+	app.Get("/", Handler)
+	app.Listen(":3000")
+}
+
+func Handler(ctx *fiber.Ctx) {
+	name := ctx.Query("name")
+	// OpenRefactory Warning:
+	// Possible XSS attack!
+	// Path:
+	//	File: src.go, Line: 18
+	//		name := ctx.Query("name")
+	//		Variable 'name' is assigned a tainted value from an external source.
+	//	File: src.go, Line: 19
+	//		ctx.Send([]byte(name))
+	//		Tainted information is passed through a function call and is used in a sink.
+	ctx.Send([]byte(name))
+}

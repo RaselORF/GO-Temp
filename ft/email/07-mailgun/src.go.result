@@ -1,0 +1,69 @@
+// Issue 266
+// Using untrusted input to construct an email is security sensitive.
+// Warning will be given.
+
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/mailgun/mailgun-go/v4"
+)
+
+var domain string = os.Getenv("DOMAIN")
+var privateAPIKey string = os.Getenv("KEY")
+
+func mailHandler(w http.ResponseWriter, r *http.Request) {
+	mg := mailgun.NewMailgun(domain, privateAPIKey)
+	user := r.URL.Query().Get("name")
+
+	sender := "sender@example.com"
+	subject := "Fancy subject!"
+	body := "Welcome %s, Hello from Mailgun Go!"
+	recipient := "recipient@example.com"
+
+	msgBody := fmt.Sprintf(body, user)
+	message := mg.NewMessage(sender, subject, msgBody, recipient)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	// OpenRefactory Warning:
+	// Possible Email injection!
+	// Path:
+	//	File: src.go, Line: 23
+	//		user := r.URL.Query().Get("name")
+	//		Variable 'user' is assigned a tainted value.
+	//	File: src.go, Line: 25
+	//		sender := "sender@example.com"
+	//		Variable 'sender' is assigned a tainted value.
+	//	File: src.go, Line: 26
+	//		subject := "Fancy subject!"
+	//		Variable 'subject' is assigned a tainted value.
+	//	File: src.go, Line: 27
+	//		body := "Welcome %s, Hello from Mailgun Go!"
+	//		Variable 'body' is assigned a tainted value.
+	//	File: src.go, Line: 28
+	//		recipient := "recipient@example.com"
+	//		Variable 'recipient' is assigned a tainted value.
+	//	File: src.go, Line: 30
+	//		msgBody := fmt.Sprintf(body, user)
+	//		Variable 'msgBody' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 31
+	//		message := mg.NewMessage(sender, subject, msgBody, recipient)
+	//		Variable 'message' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 36
+	//		mg.Send(ctx, message)
+	//		Tainted information is used in a sink.
+	resp, id, err := mg.Send(ctx, message)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("ID: %s Resp: %s\n", id, resp)
+}

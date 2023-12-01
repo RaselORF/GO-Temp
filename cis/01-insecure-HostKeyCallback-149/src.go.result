@@ -1,0 +1,26 @@
+// Issue 149
+// HostKeyCallback value is an insecure callback implementation
+// CIS should generate a warning.
+
+package testdata
+
+import (
+	"net"
+
+	"golang.org/x/crypto/ssh"
+)
+
+func insecureIgnoreHostKey() {
+	// OpenRefactory Warning:
+	// Insecure HostKeyCallback Implementation.
+	_ = &ssh.ClientConfig{
+		User: "username",
+		Auth: []ssh.AuthMethod{nil},
+		HostKeyCallback: ssh.HostKeyCallback(
+			func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+				return nil
+			}),
+	}
+}
+
+//<<<<<214, 416>>>>>

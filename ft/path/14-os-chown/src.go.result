@@ -1,0 +1,39 @@
+// Issue 89
+// Passing tainted data into os.Chown can
+// result in Path manipulation attack.
+
+package testdata
+
+import (
+	"fmt"
+	"net/http"
+	"os"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Query().Get("path")
+	// Get the user and group IDs for the new owner
+	uid := 1001
+	gid := 1001
+	// Change the ownership of the file
+	// OpenRefactory Warning:
+	// Possible Path manipulation attack!
+	// Path:
+	//	File: src.go, Line: 14
+	//		path := r.URL.Query().Get("path")
+	//		Variable 'path' is assigned a tainted value.
+	//	File: src.go, Line: 19
+	//		os.Chown(path, uid, gid)
+	//		Tainted information is used in a sink.
+	err := os.Chown(path, uid, gid)
+	if err != nil {
+		fmt.Println("Error changing ownership:", err)
+		return
+	}
+	w.Write([]byte("Hello"))
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

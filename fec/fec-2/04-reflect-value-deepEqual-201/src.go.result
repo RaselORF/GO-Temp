@@ -1,0 +1,24 @@
+// Add case type as first node in block
+			// We will get cfg similar to following:
+			// switch n.(type) {
+			//	case int:
+			//	 fmt.Print("int")
+			//	}
+			//	return n
+			//
+			// Without adding int node in block, generated cfg will look like below:
+			//
+			//			n.(type)
+			// 			 /  \
+			//			/	 \
+			//		fmt()	 return msg
+			//
+			// If we add int node in block, generated cfg will look like below:
+			//
+			//			n.(type)
+			//			/	\
+			//		   /	 \
+			//		 int	 return msg
+			//		/  \
+			//	   /	\
+			//	 fmt()	return msg

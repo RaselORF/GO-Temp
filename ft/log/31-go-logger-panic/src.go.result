@@ -1,0 +1,36 @@
+// Issue 89
+// Passing tainted data into logger.Panic can
+// result in log injection.
+package testdata
+
+import (
+	"net/http"
+
+	"os"
+
+	"github.com/apsdehal/go-logger"
+)
+
+func handler(w http.ResponseWriter, req *http.Request) {
+	username := req.URL.Query().Get("username")
+	logger, err := logger.New("MyLogger", 1, os.Stdout)
+	if err != nil {
+		panic(err)
+	}
+	w.Write([]byte("Hello, world!"))
+	// OpenRefactory Warning:
+	// Possible Log injection!
+	// Path:
+	//	File: src.go, Line: 15
+	//		username := req.URL.Query().Get("username")
+	//		Variable 'username' is assigned a tainted value.
+	//	File: src.go, Line: 21
+	//		logger.Panic(username)
+	//		Tainted information is used in a sink.
+	logger.Panic(username)
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

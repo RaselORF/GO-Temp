@@ -1,0 +1,49 @@
+// Issue 126
+// Passing tainted data via array
+
+package main
+
+import (
+	"net/http"
+	"os/exec"
+)
+
+type Box struct {
+	data string
+}
+
+func HandleReq(req *http.Request) {
+	vals := req.URL.Query()
+	cmdName := vals.Get("cmd")
+	ba := [5]Box{{cmdName}}
+	foo(ba)
+}
+
+func foo(b [5]Box) {
+	cmd := exec.Command(b[0].data)
+	// OpenRefactory Warning:
+	// Possible OS command injection!
+	// Path:
+	//	File: src.go, Line: 16
+	//		vals := req.URL.Query()
+	//		Variable 'vals' is assigned a tainted value from an external source.
+	//	File: src.go, Line: 17
+	//		cmdName := vals.Get("cmd")
+	//		Variable 'cmdName' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 18
+	//		{cmdName}
+	//		Field 'data' (from type Box) is assigned a tainted value.
+	//	File: src.go, Line: 18
+	//		ba := [5]Box{{cmdName}}
+	//		Variable 'ba' is assigned a tainted value.
+	//	File: src.go, Line: 19
+	//		foo(ba)
+	//		Tainted information is passed through the function call via 'ba' to the parameter 'b' through the field 'data' (from type Box)
+	//	File: src.go, Line: 23
+	//		cmd := exec.Command(b[0].data)
+	//		Variable 'cmd' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 24
+	//		cmd.Run()
+	//		Tainted information is used in a sink.
+	cmd.Run()
+}

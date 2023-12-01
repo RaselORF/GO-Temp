@@ -1,0 +1,28 @@
+// Issue 89
+// Pseudo random number generator should
+// be avoided for cryptographic purpose
+
+package main
+
+import (
+	"crypto/sha256"
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+func main() {
+	rand.Seed(time.Now().UnixNano())
+	salt := make([]byte, 16)
+	rand.Read(salt)
+	// Define the data and salt values
+	data := []byte("hello, world")
+	// Append the salt to the data
+	data = append(data, salt...)
+	// Compute the SHA-224 hash of the salted data
+	// OpenRefactory Warning:
+	// Sensitive usage of pseudo random number!
+	hash := sha256.Sum224(data)
+	fmt.Printf("Salt: %x\n", salt)
+	fmt.Printf("Hashed Result: %x\n", hash)
+}

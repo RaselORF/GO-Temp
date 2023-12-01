@@ -1,0 +1,36 @@
+// Issue 89
+// Passing tainted data into logger.Infof can
+// result in log injection.
+package testdata
+
+import (
+	"net/http"
+
+	"os"
+
+	"github.com/apsdehal/go-logger"
+)
+
+func handler(w http.ResponseWriter, req *http.Request) {
+	username := req.URL.Query().Get("username")
+	logger, err := logger.New("MyLogger", 1, os.Stdout)
+	if err != nil {
+		panic(err)
+	}
+	// OpenRefactory Warning:
+	// Possible Log injection!
+	// Path:
+	//	File: src.go, Line: 15
+	//		username := req.URL.Query().Get("username")
+	//		Variable 'username' is assigned a tainted value.
+	//	File: src.go, Line: 20
+	//		logger.Infof("Failed to log in %s", username)
+	//		Tainted information is used in a sink.
+	logger.Infof("Failed to log in %s", username)
+	w.Write([]byte("Hello, world!"))
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

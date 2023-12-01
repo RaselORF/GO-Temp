@@ -1,0 +1,42 @@
+// Issue 126
+// Passing tainted data via array
+
+package main
+
+import (
+	"net/http"
+	"os/exec"
+)
+
+func HandleReq(req *http.Request) {
+	vals := req.URL.Query()
+	cmdName := vals.Get("cmd")
+	ss := [2]string{cmdName, "-f"}
+	foo(ss)
+}
+
+func foo(cs [2]string) {
+	cmd := exec.Command(cs[0])
+	// OpenRefactory Warning:
+	// Possible OS command injection!
+	// Path:
+	//	File: src.go, Line: 12
+	//		vals := req.URL.Query()
+	//		Variable 'vals' is assigned a tainted value from an external source.
+	//	File: src.go, Line: 13
+	//		cmdName := vals.Get("cmd")
+	//		Variable 'cmdName' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 14
+	//		ss := [2]string{cmdName, "-f"}
+	//		Variable 'ss' is assigned a tainted value.
+	//	File: src.go, Line: 15
+	//		foo(ss)
+	//		Tainted information is passed through the function call via 'ss' to the parameter 'cs'
+	//	File: src.go, Line: 19
+	//		cmd := exec.Command(cs[0])
+	//		Variable 'cmd' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 20
+	//		cmd.Run()
+	//		Tainted information is used in a sink.
+	cmd.Run()
+}

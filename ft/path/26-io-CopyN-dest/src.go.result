@@ -1,0 +1,56 @@
+// Issue 89
+// Passing tainted data into io.CopyN can
+// result in Path manipulation attack.
+
+package main
+
+import (
+	"io"
+	"net/http"
+	"os"
+)
+
+func getDest(r *http.Request) string {
+	return r.URL.Query().Get("fname")
+}
+func handler(w http.ResponseWriter, r *http.Request) {
+	destFileName := getDest(r)
+	src, err := os.Open("srcFileName.txt")
+	if err != nil {
+		panic(err)
+	}
+	defer src.Close()
+
+	// Create destination file
+	// OpenRefactory Warning:
+	// Possible Path manipulation attack!
+	// Path:
+	//	File: src.go, Line: 14
+	//		return r.URL.Query().Get("fname")
+	//		A tainted value is returned from the function call.
+	//	File: src.go, Line: 17
+	//		destFileName := getDest(r)
+	//		Variable 'destFileName' is assigned a tainted value.
+	//	File: src.go, Line: 25
+	//		os.Create(destFileName)
+	//		Tainted information is used in a sink.
+	dst, err := os.Create(destFileName)
+	if err != nil {
+		panic(err)
+	}
+	defer dst.Close()
+
+	// Copy 10 bytes from source to destination
+	n, err := io.CopyN(dst, src, 10)
+	if err != nil {
+		panic(err)
+	}
+
+	// Print number of bytes copied
+	println(n)
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

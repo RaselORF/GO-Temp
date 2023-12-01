@@ -1,0 +1,38 @@
+// Issue 216
+// Writting tainted data into C.SendStream can
+// result in XSS.
+
+package main
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/gofiber/fiber"
+	"github.com/microcosm-cc/bluemonday"
+)
+
+func handler(c *fiber.Ctx) {
+	name := c.Query("name")
+	html := fmt.Sprintf("<h1>Hello, %s!</h1>", name)
+	// OpenRefactory Warning:
+	// Possible Cross-Site Scripting (XSS)!
+	// Path:
+	//	File: src.go, Line: 15
+	//		name := c.Query("name")
+	//		Variable 'name' is assigned a tainted value from an external source.
+	//	File: src.go, Line: 16
+	//		html := fmt.Sprintf("<h1>Hello, %s!</h1>", name)
+	//		Variable 'html' is assigned a tainted value which is passed through a function call.
+	//	File: src.go, Line: 17
+	//		c.SendStream(strings.NewReader(html))
+	//		Tainted information is passed through a function call and is used in a sink.
+	// Fix: iCR sanitizes the tainted input.
+	c.SendStream(bluemonday.UGCPolicy().SanitizeReader(strings.NewReader(html)))
+}
+
+func main() {
+	app := fiber.New()
+	app.Get("/", handler)
+	app.Listen(":3000")
+}

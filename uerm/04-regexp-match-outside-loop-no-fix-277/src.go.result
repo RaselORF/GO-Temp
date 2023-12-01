@@ -1,0 +1,17 @@
+// Issue 277
+// Using regexp.MatchReader outside a loop is ok
+
+package testdata
+
+import (
+	"fmt"
+	"regexp"
+)
+
+func main() {
+	strList := []string{"fooooo", "bAr"}
+	matched, err := regexp.MatchReader("Hello", strList[0])
+	fmt.Println(matched, err)
+}
+
+//<<<<<179, 218>>>>>

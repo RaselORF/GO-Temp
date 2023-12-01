@@ -1,0 +1,53 @@
+// Issue 126
+// Test for passing taint through the field of map
+// value locations from param to caller method.
+
+package main
+
+import (
+	"net/http"
+	"os/exec"
+)
+
+func HandleReq(req *http.Request) {
+	ss := make(map[string]string)
+	bar(req, ss)
+	foo(ss)
+}
+
+func bar(req *http.Request, mp map[string]string) {
+	vals := req.URL.Query()
+	cmdName := vals.Get("cmd")
+	mp["command"] = cmdName
+}
+
+func foo(mp map[string]string) {
+	for _, val := range mp {
+		cmd := exec.Command(val)
+		// OpenRefactory Warning:
+		// Possible OS command injection!
+		// Path:
+		//	File: src.go, Line: 19
+		//		vals := req.URL.Query()
+		//		Variable 'vals' is assigned a tainted value from an external source.
+		//	File: src.go, Line: 20
+		//		cmdName := vals.Get("cmd")
+		//		Variable 'cmdName' is assigned a tainted value which is passed through a function call.
+		//	File: src.go, Line: 21
+		//		mp["command"] = cmdName
+		//		Variable 'mp["command"]' is assigned a tainted value.
+		//	File: src.go, Line: 15
+		//		foo(ss)
+		//		Tainted information is passed through the function call via 'ss' to the parameter 'mp' through the 'value' of the map
+		//	File: src.go, Line: 25
+		//		for _, val := range mp {
+		//		Variable 'val' is assigned a tainted value.
+		//	File: src.go, Line: 26
+		//		cmd := exec.Command(val)
+		//		Variable 'cmd' is assigned a tainted value which is passed through a function call.
+		//	File: src.go, Line: 27
+		//		cmd.Run()
+		//		Tainted information is used in a sink.
+		cmd.Run()
+	}
+}

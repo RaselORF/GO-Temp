@@ -1,0 +1,30 @@
+// Issue 89
+// Passing tainted data into logrus.Fatalf can
+// result in log injection.
+package testdata
+
+import (
+	"net/http"
+
+	"github.com/sirupsen/logrus"
+)
+
+func handler(w http.ResponseWriter, req *http.Request) {
+	username := req.URL.Query().Get("username")
+	w.Write([]byte("Hello, world!"))
+	// OpenRefactory Warning:
+	// Possible Log injection!
+	// Path:
+	//	File: src.go, Line: 13
+	//		username := req.URL.Query().Get("username")
+	//		Variable 'username' is assigned a tainted value.
+	//	File: src.go, Line: 15
+	//		logrus.Fatalf("Failed to log in %s", username)
+	//		Tainted information is used in a sink.
+	logrus.Fatalf("Failed to log in %s", username)
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8090", nil)
+}

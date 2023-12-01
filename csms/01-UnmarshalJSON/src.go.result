@@ -1,0 +1,16 @@
+// Issue 296
+// Implementation of UnmarshalJSON has wrong signature.
+// Warning will be given.
+
+package testdata
+
+type S struct{}
+
+// OpenRefactory Warning:
+// Signature of 'UnmarshalJSON' should be
+// 'UnmarshalJSON([]byte) error'.
+func (s *S) UnmarshalJSON(data []byte) (error, bool) {
+	return nil, true
+}
+
+//<<<<<131, 205>>>>>

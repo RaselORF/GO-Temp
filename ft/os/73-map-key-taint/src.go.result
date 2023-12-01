@@ -1,0 +1,57 @@
+// Issue 126
+// Passing tainted data via field of map key
+
+package main
+
+import (
+	"net/http"
+	"os/exec"
+)
+
+type Box struct {
+	data string
+}
+
+var gm map[Box]string
+
+func HandleReq(req *http.Request) {
+	vals := req.URL.Query()
+	cmdName := vals.Get("cmd")
+	bx := Box{cmdName}
+	gm[bx] = "cmd"
+	foo()
+}
+
+func foo() {
+	for bx := range gm {
+		cmd := exec.Command(bx.data)
+		// OpenRefactory Warning:
+		// Possible OS command injection!
+		// Path:
+		//	File: src.go, Line: 18
+		//		vals := req.URL.Query()
+		//		Variable 'vals' is assigned a tainted value from an external source.
+		//	File: src.go, Line: 19
+		//		cmdName := vals.Get("cmd")
+		//		Variable 'cmdName' is assigned a tainted value which is passed through a function call.
+		//	File: src.go, Line: 20
+		//		Box{cmdName}
+		//		Field 'data' (from type Box) is assigned a tainted value.
+		//	File: src.go, Line: 20
+		//		bx := Box{cmdName}
+		//		Variable 'bx' is assigned a tainted value.
+		//	File: src.go, Line: 21
+		//		gm[bx]
+		//		Map key 'bx' is assigned a tainted value.
+		//	File: src.go, Line: 22
+		//		foo()
+		//		Tainted information is passed through the function call to the global 'gm' through the field 'data' (from type Box)
+		//	File: src.go, Line: 27
+		//		cmd := exec.Command(bx.data)
+		//		Variable 'cmd' is assigned a tainted value which is passed through a function call.
+		//	File: src.go, Line: 28
+		//		cmd.Run()
+		//		Tainted information is used in a sink.
+		cmd.Run()
+	}
+}

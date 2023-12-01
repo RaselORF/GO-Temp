@@ -1,0 +1,57 @@
+// Issue 126
+// During assignment to field of array element
+//		arr[i].x = value
+// we don't update the value edge, but pass
+// taints from the value to the array field location.
+// Test for passing taint through the field of array
+// locations from param to caller method.
+
+package main
+
+import (
+	"net/http"
+	"os/exec"
+)
+
+type Box struct {
+	data string
+}
+
+func HandleReq(req *http.Request) {
+	bs := make([]Box, 3)
+	foo(req, bs)
+	bar(bs)
+}
+
+func foo(req *http.Request, boxList []Box) {
+	vals := req.URL.Query()
+	boxList[0] = Box{vals.Get("cmd")}
+}
+
+func bar(bxSl []Box) {
+	for _, bx := range bxSl {
+		cmd := exec.Command(bx.data)
+		// OpenRefactory Warning:
+		// Possible OS command injection!
+		// Path:
+		//	File: src.go, Line: 27
+		//		vals := req.URL.Query()
+		//		Variable 'vals' is assigned a tainted value from an external source.
+		//	File: src.go, Line: 28
+		//		boxList[0] = Box{vals.Get("cmd")}
+		//		Variable 'boxList[0]' is assigned a tainted value.
+		//	File: src.go, Line: 23
+		//		bar(bs)
+		//		Tainted information is passed through the function call via 'bs' to the parameter 'bxSl' through the field 'data' (from type Box)
+		//	File: src.go, Line: 32
+		//		for _, bx := range bxSl {
+		//		Variable 'bx' is assigned a tainted value.
+		//	File: src.go, Line: 33
+		//		cmd := exec.Command(bx.data)
+		//		Variable 'cmd' is assigned a tainted value which is passed through a function call.
+		//	File: src.go, Line: 34
+		//		cmd.Run()
+		//		Tainted information is used in a sink.
+		cmd.Run()
+	}
+}
